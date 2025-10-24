@@ -1,0 +1,12 @@
+import express from 'express';
+import { authenticate } from '../middleware/auth.middleware.js';
+import { authorizeRoles } from '../middleware/role.middleware.js';
+import * as sessionController from '../controllers/testSession.controller.js';
+import { validateBody, validateParams } from '../middleware/validate.middleware.js';
+import { submitAnswerSchema, fetchQuestionSchema } from '../validations/session.validation.js';
+const router = express.Router();
+router.post('/start/:testId', authenticate, authorizeRoles('STUDENT'), sessionController.startTest);
+router.get('/:sessionId/questions/:questionNumber', authenticate, authorizeRoles('STUDENT'), sessionController.fetchQuestion);
+router.post('/:sessionId/questions/:questionId/answer', authenticate, authorizeRoles('STUDENT'), validateBody(submitAnswerSchema), sessionController.submitAndNext);
+router.post('/:sessionId/finish', authenticate, authorizeRoles('STUDENT'), sessionController.finishTest);
+export default router;
