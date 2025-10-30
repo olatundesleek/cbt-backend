@@ -3,8 +3,12 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import testRoutes from "./routes/test.routes.js";
+import questionRoutes from "./routes/question.routes.js";
+import questionBankRoutes from "./routes/questionBank.routes.js";
 import sessionRoutes from "./routes/testSession.routes.js";
 import classRoutes from "./routes/class.routes.js";
+import studentRoutes from "./routes/student.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import cookieParser from "cookie-parser";
 const app = express();
@@ -17,7 +21,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/class", classRoutes);
+app.use("/api/question", questionRoutes);
+app.use("/api/question-banks", questionBankRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/profile", profileRoutes);
 
 app.get("/", (req, res) => res.json({ ok: true }));
 
