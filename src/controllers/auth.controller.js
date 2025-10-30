@@ -1,6 +1,7 @@
 import * as authService from "../services/auth.service.js";
 import { success, error } from "../utils/response.js";
 const isProduction = process.env.NODE_ENV === "production";
+
 export async function register(req, res) {
   try {
     const out = await authService.register(req.body);
@@ -9,6 +10,7 @@ export async function register(req, res) {
     error(res, err.message, 400);
   }
 }
+
 export async function login(req, res) {
   try {
     const out = await authService.login(req.body);
@@ -21,6 +23,21 @@ export async function login(req, res) {
     });
 
     success(res, "User logged in successfully", out.user);
+  } catch (err) {
+    error(res, err.message, 400);
+  }
+}
+
+export async function logout(req, res) {
+  try {
+    // Clear the auth cookie
+    res.clearCookie("reqtoken", {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+    });
+    success(res, "Logged out successfully");
   } catch (err) {
     error(res, err.message, 400);
   }

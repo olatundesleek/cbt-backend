@@ -1,0 +1,50 @@
+import Joi from "joi";
+
+export const createTestSchema = Joi.object({
+  title: Joi.string().required().messages({
+    "string.empty": "Test title is required",
+    "any.required": "Test title is required",
+  }),
+  type: Joi.string().valid("TEST", "EXAM").required().messages({
+    "any.only": "Test type must be either TEST or EXAM",
+    "any.required": "Test type is required",
+  }),
+  isActive: Joi.boolean().default(true),
+  startTime: Joi.date().iso().greater("now").messages({
+    "date.greater": "Start time must be in the future",
+  }),
+  endTime: Joi.date().iso().greater(Joi.ref("startTime")).messages({
+    "date.greater": "End time must be after start time",
+  }),
+  courseId: Joi.number().required().messages({
+    "number.base": "Course ID must be a number",
+    "any.required": "Course ID is required",
+  }),
+  bankId: Joi.number().required().messages({
+    "number.base": "Question bank ID must be a number",
+    "any.required": "Question bank ID is required",
+  }),
+});
+
+export const updateTestSchema = Joi.object({
+  title: Joi.string().messages({
+    "string.empty": "Test title cannot be empty",
+  }),
+  type: Joi.string().valid("TEST", "EXAM").messages({
+    "any.only": "Test type must be either TEST or EXAM",
+  }),
+  isActive: Joi.boolean(),
+  startTime: Joi.date().iso().greater("now").messages({
+    "date.greater": "Start time must be in the future",
+  }),
+  endTime: Joi.date().iso().greater(Joi.ref("startTime")).messages({
+    "date.greater": "End time must be after start time",
+  }),
+});
+
+export const testIdSchema = Joi.object({
+  testId: Joi.number().required().messages({
+    "number.base": "Test ID must be a number",
+    "any.required": "Test ID is required",
+  }),
+});

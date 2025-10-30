@@ -1,7 +1,8 @@
-export function authorizeRoles(...roles){
+export function authorizeRoles(...roles) {
   return (req, res, next) => {
-    if(!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    if(!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+    console.log(req.user);
+    if (!req.user) return { error: "Not authenticated" };
+    if (!roles.includes(req.user.role)) return { error: "Forbidden" };
     next();
   };
 }
