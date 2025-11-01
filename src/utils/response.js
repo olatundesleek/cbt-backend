@@ -10,7 +10,7 @@ export const success = (
 export const error = (
   res,
   message = "An error occurred",
-  details = null,
+  details = "null",
   status = 500
 ) => {
   return res.status(status).json({ success: false, message, details });

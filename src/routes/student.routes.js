@@ -3,6 +3,7 @@ import * as studentController from "../controllers/student.controller.js";
 import {
   assignClassSchema,
   getStudentSchema,
+  updateStudentPasswordSchema,
 } from "../validators/student.validator.js";
 import {
   validateBody,
@@ -29,14 +30,23 @@ router.get(
   studentController.getStudentByUsername
 );
 
-// Assign a student to a class (ADMIN or TEACHER)
+// Assign a student to a class (ADMIN )
 router.post(
   "/:username/assign-class",
   validateParams(getStudentSchema),
   validateBody(assignClassSchema),
   authenticate,
-  authorizeRoles("ADMIN", "TEACHER"),
+  authorizeRoles("ADMIN"),
   studentController.assignClassToStudent
+);
+
+// route for admin to change a user's password
+router.patch(
+  "change-user-password/:username",
+  authenticate,
+  validateBody(updateStudentPasswordSchema),
+  authorizeRoles("ADMIN"),
+  studentController.changeUserPassword
 );
 
 export default router;
