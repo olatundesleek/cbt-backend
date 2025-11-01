@@ -57,9 +57,16 @@ export const createTest = async (data, user) => {
     include: { teacher: true },
   });
 
-  if (!bank) throw new Error("Question bank not found");
+  if (!bank) {
+    const error = new Error("unable to create test");
+    error.details = "Question bank not found";
+    throw error;
+  }
+
   if (bank.createdBy !== user.id && user.role !== "ADMIN") {
-    throw new Error("You don't have permission to use this question bank");
+    const error = new Error("unable to create test");
+    error.details = "You don't have permission to use this question bank";
+    throw error;
   }
 
   // Create test
@@ -208,7 +215,6 @@ export const getTests = async (user) => {
           },
           bank: {
             select: {
-              questionBankName: true,
               _count: {
                 select: {
                   questions: true,

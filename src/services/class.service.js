@@ -95,8 +95,56 @@ export const deleteClass = async (classId) => {
 export const getClassesForUser = async (user) => {
   // Implementation for fetching classes for a specific user
 
-  return [
-    { id: 1, className: "Math 101", teacherId: 1 },
-    { id: 2, className: "History 201", teacherId: 2 },
-  ];
+  const role = user.role 
+
+  if (role === "ADMIN") {
+    return await prisma.class.findMany({
+      include: {
+        teacher: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
+        courses: true,
+      },
+    });
+  }
+  if (role === "TEACHER") {
+    return prisma.class.findMany({
+      where: { teacherId: user.id },
+      include: {
+        teacher: {
+          select: {
+            id: true,
+            firstname: true,
+            lastname: true,
+          },
+        },
+        courses: true,
+      },
+    });
+  } if (role === "STUDENT") {
+    const student = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        enrolledClasses: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                firstname: true,
+                lastname: true,
+              },
+            },
+            courses: true,
+          },
+        },
+      },
+    });
+
+    return student?.enrolledClasses || [];
+  } 
+  throw new Error("Invalid role");
 };

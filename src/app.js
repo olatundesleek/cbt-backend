@@ -9,6 +9,7 @@ import sessionRoutes from "./routes/testSession.routes.js";
 import classRoutes from "./routes/class.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import cookieParser from "cookie-parser";
 const app = express();
@@ -26,6 +27,7 @@ app.use("/api/question-banks", questionBankRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (req, res) => res.json({ ok: true }));
 

@@ -159,6 +159,24 @@ Response:
 }
 ```
 
+### Dashboard
+
+#### fetch dashboard details
+
+\`\`\`http
+GET /api/dashboard
+\`\`\`
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "dashboard fetched successfully",
+  "data": {}
+}
+```
+
 ### Class Management
 
 #### Create Class (Admin only)

@@ -44,9 +44,9 @@ export const updateTestSchema = Joi.object({
   endTime: Joi.date().iso().greater(Joi.ref("startTime")).messages({
     "date.greater": "End time must be after start time",
   }),
-  duration: Joi.number().min(1).max(180).messages({
+  duration: Joi.number().min(1).max(300).messages({
     "number.min": "Duration must be at least 1 minute",
-    "number.max": "Duration cannot exceed 180 minutes",
+    "number.max": "Duration cannot exceed 300 minutes",
   }),
 });
 
