@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum TestType {
+  TEST
+  EXAM
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  SUBMITTED
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  firstname         String
+  lastname         String
+  username     String          @unique
+  password     String
+  role         Role            @default(STUDENT)
+
+  // Each user (student) belongs to one class (optional for teachers/admins)
+  classId      Int?
+  class        Class?          @relation(fields: [classId], references: [id])
+
+  // Relations
+  teacherOf    Class[]         @relation("ClassTeacher")
+  courses      Course[]        @relation("CourseTeacher")
+  tests        Test[]          @relation("UserTests")       // ✅ Opposite of Test.teacher
+  questionBanks  QuestionBank[]   
+  testSessions TestSession[]
+
+  createdAt    DateTime        @default(now())
+}
+
+model Class {
+  id        Int        @id @default(autoincrement())
+  className      String     @unique
+  teacherId Int?
+  teacher   User?       @relation("ClassTeacher", fields: [teacherId], references: [id])
+  students  User[]      // automatically linked via User.classId
+  courses   Course[]    @relation("ClassCourses")
+  createdAt DateTime    @default(now())
+}
+
+model Course {
+  id          Int        @id @default(autoincrement())
+  title       String      @unique
+  description String?
+  teacherId   Int?
+  teacher     User?        @relation("CourseTeacher", fields: [teacherId], references: [id])
+  classes     Class[]     @relation("ClassCourses")
+  questionBanks  QuestionBank[]
+  tests       Test[]
+  createdAt   DateTime    @default(now())
+}
+
+model Test {
+  id         Int          @id @default(autoincrement())
+  title      String       @unique
+  type       TestType
+  isActive   Boolean      @default(true)
+  showResult Boolean      @default(false)  // Controls result visibility for EXAM type
+  startTime  DateTime?
+  endTime    DateTime?
+  duration   Int?
+  courseId   Int
+  course     Course       @relation(fields: [courseId], references: [id])
+
+  bankId     Int
+  bank       QuestionBank @relation(fields: [bankId], references: [id])
+
+  createdBy  Int
+  teacher    User         @relation("UserTests", fields: [createdBy], references: [id])
+  sessions   TestSession[]
+
+  createdAt  DateTime     @default(now())
+}
+
+model QuestionBank {
+  id          Int         @id @default(autoincrement())
+  questionBankName        String      @unique
+  description String?
+  courseId    Int?
+  course      Course?     @relation(fields: [courseId], references: [id])
+  tests     Test[]
+  questions   Question[]
+  createdBy   Int
+  teacher     User        @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime    @default(now())
+}
+
+model Question {
+  id        Int         @id @default(autoincrement())
+  text      String
+  options   Json
+  answer    String
+  marks     Int          @default(1)
+  bankId    Int
+  bank      QuestionBank @relation(fields: [bankId], references: [id])
+  answers   Answer[]
+  createdAt DateTime     @default(now())
+}
+
+model TestSession {
+  id         Int           @id @default(autoincrement())
+  studentId  Int
+  testId     Int
+  status     SessionStatus @default(IN_PROGRESS)
+  startedAt  DateTime      @default(now())
+  endedAt    DateTime?
+  score      Int?
+  student    User          @relation(fields: [studentId], references: [id])
+  test       Test          @relation(fields: [testId], references: [id])
+  answers    Answer[]
+}
+
+model Answer {
+  id             Int          @id @default(autoincrement())
+  testSessionId  Int
+  questionId     Int
+  selectedOption String
+  isCorrect      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  session        TestSession  @relation(fields: [testSessionId], references: [id])
+  question       Question     @relation(fields: [questionId], references: [id])
+}
