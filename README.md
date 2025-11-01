@@ -734,6 +734,105 @@ Response:
 }
 ```
 
+### Results
+
+#### Get Test Results (Teacher/Admin)
+
+\`\`\`http
+GET /api/results/test/:testId
+\`\`\`
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Test results fetched successfully",
+  "data": {
+    "id": 1,
+    "title": "Midterm Exam",
+    "course": {
+      "title": "Mathematics 101"
+    },
+    "sessions": [
+      {
+        "id": 1,
+        "student": {
+          "firstname": "John",
+          "lastname": "Doe"
+        },
+        "score": 85,
+        "status": "SUBMITTED",
+        "startedAt": "2025-10-30T10:00:00.000Z",
+        "endedAt": "2025-10-30T11:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+#### Get Student Results (Student)
+
+\`\`\`http
+GET /api/results/courses/:courseId
+\`\`\`
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Course results fetched successfully",
+  "data": {
+    "course": {
+      "id": 1,
+      "title": "Mathematics 101"
+    },
+    "tests": [
+      {
+        "id": 1,
+        "title": "Midterm Exam",
+        "type": "EXAM",
+        "session": {
+          "score": 85,
+          "status": "SUBMITTED",
+          "startedAt": "2025-10-30T10:00:00.000Z",
+          "endedAt": "2025-10-30T11:00:00.000Z"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Toggle Result Visibility (Admin only)
+
+\`\`\`http
+PATCH /api/results/test/:testId/release
+\`\`\`
+
+Request body:
+
+```json
+{
+  "showResult": true
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Result visibility updated successfully",
+  "data": {
+    "id": 1,
+    "title": "Midterm Exam",
+    "showResult": true
+  }
+}
+```
+
 ## Error Handling
 
 The API uses consistent error responses:

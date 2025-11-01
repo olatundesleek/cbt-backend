@@ -11,7 +11,7 @@ export async function register(req, res) {
   }
 }
 
-export async function login(req, res) {
+export async function login(req, res, next) {
   try {
     const out = await authService.login(req.body);
     console.log("Setting cookie with token:", out.token);
@@ -21,10 +21,10 @@ export async function login(req, res) {
       sameSite: isProduction ? "none" : "lax", // "none" for cross-site in prod, "lax" to avoid rejection in dev
       path: "/", // Ensure it's sent on all routes
     });
-
-    success(res, "User logged in successfully", out.user);
+    const data = { data: out.user, token: out.token };
+    success(res, "User logged in successfully", data);
   } catch (err) {
-    error(res, err.message, 400);
+    next(err);
   }
 }
 

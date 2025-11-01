@@ -1,42 +1,56 @@
 import Joi from "joi";
 
-// Question validators
-export const createQuestionSchema = Joi.alternatives().try(
-  // Single question object
-  Joi.object({
-    text: Joi.string().min(10).max(500).required(),
-    options: Joi.object().required(), // JSON object for options
-    answer: Joi.string().required(),
-    marks: Joi.number().integer().min(1).default(1),
-    bankId: Joi.number().integer().required(),
+// ✅ Single Question Schema
+const singleQuestionSchema = Joi.object({
+  text: Joi.string().min(10).max(500).required(),
+
+  options: Joi.array().items(Joi.string().min(1)).min(2).required().messages({
+    "array.base": "Options must be an array of strings",
+    "array.min": "At least two options are required",
   }),
-  // Array of questions
-  Joi.array()
-    .items(
-      Joi.object({
-        text: Joi.string().min(10).max(500).required(),
-        options: Joi.object().required(),
-        answer: Joi.string().required(),
-        marks: Joi.number().integer().min(1).default(1),
-        bankId: Joi.number().integer().required(),
-      })
-    )
-    .min(1)
-    .max(100) // Allow between 1 and 100 questions per batch
+
+  answer: Joi.string()
+    .required()
+    .custom((value, helpers) => {
+      const { options } = helpers.state.ancestors[0];
+      if (!options.includes(value)) {
+        return helpers.error("any.invalid", {
+          message: "Answer must match one of the options",
+        });
+      }
+      return value;
+    }),
+
+  marks: Joi.number().integer().min(1).default(1),
+  bankId: Joi.number().integer().required(),
+});
+
+// ✅ Allow single or multiple questions
+export const createQuestionSchema = Joi.alternatives().try(
+  singleQuestionSchema,
+  Joi.array().items(singleQuestionSchema).min(1).max(100)
 );
 
+// ✅ Update Question Schema
 export const updateQuestionSchema = Joi.object({
   text: Joi.string().min(10).max(500).optional(),
-  options: Joi.object().optional(),
+
+  options: Joi.array().items(Joi.string().min(1)).min(2).optional().messages({
+    "array.base": "Options must be an array of strings",
+    "array.min": "At least two options are required",
+  }),
+
   answer: Joi.string().optional(),
+
   marks: Joi.number().integer().min(1).optional(),
 }).min(1); // At least one field must be provided
 
+// ✅ Get Questions Schema
 export const getQuestionsSchema = Joi.object({
   bankId: Joi.number().integer().required(),
 });
 
-// Question Bank validators
+// ✅ Question Bank Validators
 export const createQuestionBankSchema = Joi.object({
   questionBankName: Joi.string().min(3).max(100).required(),
   description: Joi.string().min(10).max(500).optional(),
@@ -51,5 +65,5 @@ export const updateQuestionBankSchema = Joi.object({
 
 // CSV upload validation
 export const uploadQuestionsSchema = Joi.object({
-  bankId: Joi.number().integer().required()
+  bankId: Joi.number().integer().required(),
 }).unknown(true); // Allow other fields (multer adds file details)

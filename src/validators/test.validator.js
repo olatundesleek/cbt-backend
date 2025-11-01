@@ -16,6 +16,10 @@ export const createTestSchema = Joi.object({
   endTime: Joi.date().iso().greater(Joi.ref("startTime")).messages({
     "date.greater": "End time must be after start time",
   }),
+  duration: Joi.number().min(1).max(180).messages({
+    "number.min": "Duration must be at least 1 minute",
+    "number.max": "Duration cannot exceed 180 minutes",
+  }),
   courseId: Joi.number().required().messages({
     "number.base": "Course ID must be a number",
     "any.required": "Course ID is required",
@@ -39,6 +43,10 @@ export const updateTestSchema = Joi.object({
   }),
   endTime: Joi.date().iso().greater(Joi.ref("startTime")).messages({
     "date.greater": "End time must be after start time",
+  }),
+  duration: Joi.number().min(1).max(180).messages({
+    "number.min": "Duration must be at least 1 minute",
+    "number.max": "Duration cannot exceed 180 minutes",
   }),
 });
 

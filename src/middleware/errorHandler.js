@@ -41,7 +41,8 @@ export const errorHandler = (err, req, res, next) => {
   return error(
     res,
     err.message || "Internal server error",
-    process.env.NODE_ENV === "development" ? err.stack : null,
-    err.status || 500
+    err.details || null,
+    err.status || 500,
+    process.env.NODE_ENV === "development" ? err.stack : null
   );
 };

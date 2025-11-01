@@ -10,11 +10,11 @@ import { authenticate } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 // Get logged in user's profile
-router.get("/me", authenticate, profileController.getProfile);
+router.get("/", authenticate, profileController.getProfile);
 
 // Update profile details (name, username)
 router.patch(
-  "/me",
+  "/",
   validateBody(updateProfileSchema),
   authenticate,
   profileController.updateProfile
@@ -22,7 +22,7 @@ router.patch(
 
 // Update password
 router.patch(
-  "/me/password",
+  "/password",
   validateBody(updatePasswordSchema),
   authenticate,
   profileController.updatePassword

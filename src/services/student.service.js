@@ -63,7 +63,7 @@ export const assignStudentToClass = async (studentId, classId, requester) => {
       where: { id: parseInt(studentId) },
     });
     if (!student || student.role !== "STUDENT")
-      throw new Error("Invalid student");
+      throw new Error("user is not a student");
 
     const updated = await prisma.user.update({
       where: { id: parseInt(studentId) },
@@ -74,6 +74,20 @@ export const assignStudentToClass = async (studentId, classId, requester) => {
     return updated;
   } catch (error) {
     console.error("Error assigning student to class:", error);
+    throw error;
+  }
+};
+
+export const changeUserPassword = async (username, newPassword) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) throw new Error("User not found");
+    await prisma.user.update({
+      where: { username },
+      data: { password: newPassword },
+    });
+  } catch (error) {
+    console.error("Error changing user password:", error);
     throw error;
   }
 };
