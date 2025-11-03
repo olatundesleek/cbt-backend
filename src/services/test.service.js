@@ -1,3 +1,4 @@
+import e from "express";
 import prisma from "../config/prisma.js";
 
 const canAccessTest = async (testId, user) => {
@@ -26,12 +27,12 @@ const canAccessTest = async (testId, user) => {
     return test.createdBy === user.id;
   }
 
-  // Students can only access active tests in their class's courses
+  // Students can only access tests in their class's courses
   if (user.role === "STUDENT") {
     const isStudentInClass = test.course.classes.some((class_) =>
       class_.students.some((student) => student.id === user.id)
     );
-    return isStudentInClass && test.isActive;
+    return isStudentInClass;
   }
 
   return false;
@@ -146,10 +147,6 @@ export const getTestById = async (testId, user) => {
     case "STUDENT":
       if (!user.classId) {
         throw new Error("You are not assigned to any class");
-      }
-
-      if (!test.isActive) {
-        throw new Error("This test is not currently active");
       }
 
       // Check if student's class has access to this test's course
@@ -277,12 +274,13 @@ export const getTests = async (user) => {
 
     case "STUDENT":
       if (!user.classId) {
-        throw new Error("You are not assigned to any class");
+        const error = new Error("Unable to fetch tests");
+        error.details = "You are not assigned to any class";
+        throw error;
       }
 
       const tests = await prisma.test.findMany({
         where: {
-          isActive: true,
           course: {
             classes: {
               some: {
@@ -314,7 +312,7 @@ export const getTests = async (user) => {
 
       // Remove sensitive data for students
       return tests.map((test) => {
-        const { bankId, createdBy, ...safeTest } = test;
+        const { bankId, showResult, createdBy, ...safeTest } = test;
         return safeTest;
       });
 

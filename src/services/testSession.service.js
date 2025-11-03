@@ -47,15 +47,18 @@ export async function startSession({ studentId, testId }) {
     where: { id: testId },
     include: {
       course: { include: { classes: { include: { students: true } } } },
-      questions: { orderBy: { id: "asc" } },
+      bank: { include: { questions: { orderBy: { id: "asc" } } } },
     },
   });
+
+  console.log("this is the test:", test);
+
   if (!test) throw new Error("Test not found");
   const now = new Date();
   if (test.startTime && test.startTime > now)
     throw new Error("Test not yet started");
   if (test.endTime && test.endTime < now) throw new Error("Test already ended");
-  if (!test.isActive) throw new Error("Test is not active");
+  if (!test.testState === "active") throw new Error("Test is not active");
   const enrolled = await prisma.course.findFirst({
     where: {
       id: test.courseId,
@@ -68,7 +71,7 @@ export async function startSession({ studentId, testId }) {
   });
   if (existing) {
     // return only first two questions, never include answers during test
-    const questions = test.questions.slice(0, 2).map((q) => {
+    const questions = test.bank.questions.slice(0, 2).map((q) => {
       const { answer, ...rest } = q;
       return rest;
     });
@@ -225,11 +228,20 @@ export async function submitAnswerAndGetNext({
   await submitAnswerOnly({ sessionId, questionId, selectedOption });
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
-    include: { test: { include: { questions: { orderBy: { id: "asc" } } } } },
+    include: {
+      test: {
+        include: {
+          bank: { include: { questions: { orderBy: { id: "asc" } } } },
+        },
+      },
+    },
   });
+
+  console.log(session);
+
   if (!session) throw new Error("Session not found");
   if (session.endedAt) throw new Error("Session already finished");
-  const questions = session.test.questions;
+  const questions = session.test.bank.questions;
   const answered = await prisma.answer.findMany({
     where: { testSessionId: sessionId },
     select: { questionId: true },
