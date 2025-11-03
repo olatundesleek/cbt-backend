@@ -309,7 +309,7 @@ export async function getStudentCourseResults(user, options = {}) {
     throw new Error("Only students can access this endpoint");
   }
 
-  const { courseId, startDate, endDate, testType = "ALL" } = options;
+  const { courseId, startDate, endDate, limit, testType = "ALL" } = options;
 
   // Get student's class and enrolled courses
   const student = await prisma.user.findUnique({
@@ -327,26 +327,28 @@ export async function getStudentCourseResults(user, options = {}) {
     throw new Error("Student not assigned to any class");
   }
 
+  // Get course IDs
   const courseIds = courseId
     ? [parseInt(courseId)]
     : student.class.courses.map((c) => c.id);
 
+  // Apply limit to number of courses if provided
+  const limitedCourseIds = limit ? courseIds.slice(0, limit) : courseIds;
+
   const results = [];
 
-  for (const cid of courseIds) {
+  for (const cid of limitedCourseIds) {
     const course = await prisma.course.findUnique({
       where: { id: cid },
       include: {
         tests: {
           where: {
             ...(testType !== "ALL" && { type: testType }),
-            ...(startDate && {
-              startTime: { gte: new Date(startDate) },
-            }),
-            ...(endDate && {
-              endTime: { lte: new Date(endDate) },
-            }),
+            ...(startDate && { startTime: { gte: new Date(startDate) } }),
+            ...(endDate && { endTime: { lte: new Date(endDate) } }),
           },
+          orderBy: { startTime: "desc" }, // newest first
+          take: limit ? limit : undefined, // also limit tests per course
           include: {
             sessions: {
               where: { studentId: user.id },
@@ -394,8 +396,10 @@ export async function getStudentCourseResults(user, options = {}) {
     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
     averageScore:
-      results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
-      results.length,
+      results.length > 0
+        ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
+          results.length
+        : 0,
     pendingTests: results.reduce(
       (sum, r) => sum + (r.stats.totalTests - r.stats.testsAttempted),
       0

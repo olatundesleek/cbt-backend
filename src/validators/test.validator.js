@@ -9,7 +9,14 @@ export const createTestSchema = Joi.object({
     "any.only": "Test type must be either TEST or EXAM",
     "any.required": "Test type is required",
   }),
-  isActive: Joi.boolean().default(true),
+  testState: Joi.string()
+    .valid("active", "inactive", "scheduled", "completed")
+    .required()
+    .messages({
+      "any.only":
+        "Test state must be either 'active', 'inactive', 'scheduled', or 'completed'",
+      "any.required": "Test state is required",
+    }),
   startTime: Joi.date().iso().greater("now").messages({
     "date.greater": "Start time must be in the future",
   }),
@@ -37,7 +44,14 @@ export const updateTestSchema = Joi.object({
   type: Joi.string().valid("TEST", "EXAM").messages({
     "any.only": "Test type must be either TEST or EXAM",
   }),
-  isActive: Joi.boolean(),
+  testState: Joi.string()
+    .valid("active", "inactive", "scheduled", "completed")
+    .required()
+    .messages({
+      "any.only":
+        "Test state must be either 'active', 'inactive', 'scheduled', or 'completed'",
+      "any.required": "Test state is required",
+    }),
   startTime: Joi.date().iso().greater("now").messages({
     "date.greater": "Start time must be in the future",
   }),

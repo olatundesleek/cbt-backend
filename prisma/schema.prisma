@@ -26,53 +26,51 @@ enum SessionStatus {
 
 model User {
   id           Int            @id @default(autoincrement())
-  firstname         String
-  lastname         String
+  firstname    String
+  lastname     String
   username     String          @unique
   password     String
   role         Role            @default(STUDENT)
-
-  // Each user (student) belongs to one class (optional for teachers/admins)
   classId      Int?
   class        Class?          @relation(fields: [classId], references: [id])
-
-  // Relations
   teacherOf    Class[]         @relation("ClassTeacher")
   courses      Course[]        @relation("CourseTeacher")
-  tests        Test[]          @relation("UserTests")       // ✅ Opposite of Test.teacher
-  questionBanks  QuestionBank[]   
+  tests        Test[]          @relation("UserTests")
+  questionBanks  QuestionBank[]
   testSessions TestSession[]
-
+  notification Notification[]
   createdAt    DateTime        @default(now())
 }
 
 model Class {
-  id        Int        @id @default(autoincrement())
-  className      String     @unique
-  teacherId Int?
-  teacher   User?       @relation("ClassTeacher", fields: [teacherId], references: [id])
-  students  User[]      // automatically linked via User.classId
-  courses   Course[]    @relation("ClassCourses")
-  createdAt DateTime    @default(now())
+  id          Int             @id @default(autoincrement())
+  className   String          @unique
+  teacherId   Int?
+  teacher     User?           @relation("ClassTeacher", fields: [teacherId], references: [id])
+  students    User[]
+  courses     Course[]        @relation("ClassCourses")
+  notifications Notification[] 
+  createdAt   DateTime        @default(now())
 }
 
 model Course {
-  id          Int        @id @default(autoincrement())
-  title       String      @unique
+  id          Int             @id @default(autoincrement())
+  title       String          @unique
   description String?
   teacherId   Int?
-  teacher     User?        @relation("CourseTeacher", fields: [teacherId], references: [id])
-  classes     Class[]     @relation("ClassCourses")
+  teacher     User?           @relation("CourseTeacher", fields: [teacherId], references: [id])
+  classes     Class[]         @relation("ClassCourses")
   questionBanks  QuestionBank[]
   tests       Test[]
-  createdAt   DateTime    @default(now())
+  notifications Notification[] 
+  createdAt   DateTime        @default(now())
 }
 
 model Test {
   id         Int          @id @default(autoincrement())
   title      String       @unique
   type       TestType
-  isActive   Boolean      @default(true)
+  testState   String      @default("scheduled")
   showResult Boolean      @default(false)  // Controls result visibility for EXAM type
   startTime  DateTime?
   endTime    DateTime?
@@ -89,6 +87,15 @@ model Test {
 
   createdAt  DateTime     @default(now())
 }
+
+enum testType {
+  ACTIVE   
+  SCHEDULED   
+  COMPLETED   
+  INACTIVE     
+  
+}
+
 
 model QuestionBank {
   id          Int         @id @default(autoincrement())
@@ -138,3 +145,32 @@ model Answer {
   session        TestSession  @relation(fields: [testSessionId], references: [id])
   question       Question     @relation(fields: [questionId], references: [id])
 }
+
+model Notification {
+  id           Int              @id @default(autoincrement())
+  title        String
+  message      String
+  type         NotificationType // GENERAL, STUDENT, TEACHER, CLASS, COURSE
+
+ 
+  classId      Int?
+  class        Class?           @relation(fields: [classId], references: [id])
+
+  courseId     Int?
+  course       Course?          @relation(fields: [courseId], references: [id])
+
+
+  createdById  Int?
+  createdBy    User?            @relation(fields: [createdById], references: [id])
+
+  createdAt    DateTime         @default(now())
+}
+
+enum NotificationType {
+  GENERAL   // Everyone
+  STUDENT   // All students
+  TEACHER   // All teachers
+  CLASS     // A specific class
+  COURSE    // A specific course
+}
+

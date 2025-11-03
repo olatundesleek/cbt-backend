@@ -4,7 +4,7 @@ import { authorizeRoles } from "../middleware/role.middleware.js";
 import {
   validateBody,
   validateParams,
-  validateQuery,
+  // validateQuery,
 } from "../middleware/validate.middleware.js";
 import * as resultController from "../controllers/result.controller.js";
 import {
@@ -30,7 +30,7 @@ router.get(
   "/test/:testId",
   authenticate,
   validateParams(getTestResultsSchema),
-  validateQuery(getTestResultsSchema),
+  // validateQuery(getTestResultsSchema),
   resultController.getTestResults
 );
 
@@ -39,7 +39,7 @@ router.get(
   "/",
   authenticate,
   authorizeRoles("ADMIN", "TEACHER"),
-  validateQuery(getAllResultsSchema),
+  // validateQuery(getAllResultsSchema),
   resultController.getAllResults
 );
 
@@ -48,7 +48,7 @@ router.get(
   "/student/courses",
   authenticate,
   authorizeRoles("STUDENT"),
-  validateQuery(getStudentCourseResultsSchema),
+  // validateQuery(getStudentCourseResultsSchema),
   resultController.getStudentCourseResults
 );
 

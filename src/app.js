@@ -7,6 +7,7 @@ import questionRoutes from "./routes/question.routes.js";
 import questionBankRoutes from "./routes/questionBank.routes.js";
 import sessionRoutes from "./routes/testSession.routes.js";
 import classRoutes from "./routes/class.routes.js";
+import resultRoutes from "./routes/result.routes.js";
 import studentRoutes from "./routes/student.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
@@ -28,6 +29,7 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/results", resultRoutes);
 
 app.get("/", (req, res) => res.json({ ok: true }));
 

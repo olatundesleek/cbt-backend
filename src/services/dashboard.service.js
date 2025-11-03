@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { getStudentCourseResults } from "../services/result.service.js";
 
 export const fetchDashboardData = async (role, userId) => {
   try {
@@ -72,7 +73,7 @@ export const fetchDashboardData = async (role, userId) => {
         }),
         activeTests: await prisma.test.findMany({
           where: {
-            isActive: true,
+            testState: "active",
             course: {
               classes: { some: { id: classId } },
             },
@@ -86,6 +87,12 @@ export const fetchDashboardData = async (role, userId) => {
             course: { select: { title: true } },
           },
         }),
+
+        recentResults: await getStudentCourseResults(
+          { id: userId, role: "STUDENT" },
+          { limit: 5 }
+        ),
+
         completedTests: await prisma.testSession.count({
           where: {
             studentId: userId,
