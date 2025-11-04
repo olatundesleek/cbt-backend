@@ -75,6 +75,7 @@ model Test {
   startTime  DateTime?
   endTime    DateTime?
   duration   Int?
+  attemptsAllowed Int?       @default(1)
   courseId   Int
   course     Course       @relation(fields: [courseId], references: [id])
 
@@ -126,6 +127,7 @@ model TestSession {
   id         Int           @id @default(autoincrement())
   studentId  Int
   testId     Int
+  attemptNo  Int?           @default(1)
   status     SessionStatus @default(IN_PROGRESS)
   startedAt  DateTime      @default(now())
   endedAt    DateTime?

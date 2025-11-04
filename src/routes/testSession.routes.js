@@ -7,7 +7,7 @@ import {
   validateParams,
 } from "../middleware/validate.middleware.js";
 import {
-  submitAnswerSchema,
+  submitAnswersSchema,
   fetchQuestionSchema,
 } from "../validators/session.validator.js";
 const router = express.Router();
@@ -31,16 +31,25 @@ router.post(
   "/:sessionId/questions/:questionId/submit",
   authenticate,
   authorizeRoles("STUDENT"),
-  validateBody(submitAnswerSchema),
+  validateBody(submitAnswersSchema),
   sessionController.submitAnswerOnly
 );
 
 // submit and get next
 router.post(
-  "/:sessionId/questions/:questionId/answer",
+  "/questions-next/answer",
   authenticate,
   authorizeRoles("STUDENT"),
-  validateBody(submitAnswerSchema),
+  validateBody(submitAnswersSchema),
+  sessionController.submitAndNext
+);
+
+// submit and get previous
+router.post(
+  "/questions-previous/answer",
+  authenticate,
+  authorizeRoles("STUDENT"),
+  validateBody(submitAnswersSchema),
   sessionController.submitAndNext
 );
 

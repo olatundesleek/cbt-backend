@@ -8,6 +8,11 @@ export const startSessionSchema = Joi.object({
 });
 
 export const fetchQuestionSchema = Joi.object({
+  sessionId: Joi.number().integer().min(1).required().messages({
+    "number.base": "Session ID must be a number",
+    "number.min": "Session ID must be at least 1",
+    "any.required": "Session ID is required",
+  }),
   questionNumber: Joi.number().integer().min(1).required().messages({
     "number.base": "Question number must be a number",
     "number.min": "Question number must be at least 1",
@@ -15,9 +20,16 @@ export const fetchQuestionSchema = Joi.object({
   }),
 });
 
-export const submitAnswerSchema = Joi.object({
-  selectedOption: Joi.string().required().trim().messages({
-    "string.empty": "Selected option cannot be empty",
-    "any.required": "Selected option is required",
-  }),
+export const submitAnswersSchema = Joi.object({
+  sessionId: Joi.alternatives(Joi.number(), Joi.string()).required(),
+  answers: Joi.array()
+    .items(
+      Joi.object({
+        questionId: Joi.number().required(),
+        selectedOption: Joi.string().required(),
+      })
+    )
+    .min(1)
+    .max(2)
+    .required(),
 });
