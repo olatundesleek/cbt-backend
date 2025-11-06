@@ -17,24 +17,27 @@ import {
 
 const router = express.Router();
 
-// Get single session result
+// Get single session result, this is for admin use only
 router.get(
   "/:sessionId",
   authenticate,
+  authorizeRoles("ADMIN"),
   validateParams(getSessionResultSchema),
   resultController.getResult
 );
 
-// Get all results for a test
+// Get all results for a test, this is for admin and teachers
 router.get(
   "/test/:testId",
   authenticate,
+  authorizeRoles("ADMIN", "TEACHER"),
   validateParams(getTestResultsSchema),
   // validateQuery(getTestResultsSchema),
   resultController.getTestResults
 );
 
-// Get all results (admin/teacher)
+// Get all results, this is for admin and teachers
+
 router.get(
   "/",
   authenticate,

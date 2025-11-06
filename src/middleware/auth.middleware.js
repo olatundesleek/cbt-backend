@@ -5,16 +5,16 @@ export async function authenticate(req, res, next) {
   try {
     const token = req.cookies.reqtoken;
     console.log("Authenticating with token:", token);
-    if (!token) return { error: "No token" };
+    if (!token) return res.status(401).send("No token");
 
     const payload = verifyToken(token);
     console.log("Token payload:", payload);
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
-    if (!user) return { error: "User not found" };
+    if (!user) return res.status(401).send("User not found");
     req.user = user;
     next();
   } catch (e) {
     console.log("Token from cookie:", req.cookies.reqtoken);
-    return { error: "Invalid token" };
+    return res.status(401).send("Invalid token");
   }
 }

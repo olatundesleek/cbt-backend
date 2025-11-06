@@ -55,12 +55,19 @@ export const createTest = async (data, user) => {
   // Verify question bank exists and user has access
   const bank = await prisma.questionBank.findUnique({
     where: { id: parseInt(data.bankId) },
-    include: { teacher: true },
+    include: { teacher: true, questions: true },
   });
 
   if (!bank) {
     const error = new Error("unable to create test");
     error.details = "Question bank not found";
+    throw error;
+  }
+
+  //  check if bank question is 0
+  if (bank.questions.length === 0) {
+    const error = new Error("unable to create test");
+    error.details = "Question bank is empty";
     throw error;
   }
 
@@ -165,9 +172,28 @@ export const getTestById = async (testId, user) => {
         throw new Error("You don't have access to this test");
       }
 
-      // Return limited test info for students
-      const { bankId, createdBy, ...safeTest } = test;
-      return safeTest;
+      const title = test?.course?.title || "Untitled"; // safely extract title
+      const questionCount = test.bank._count;
+      // Remove unwanted fields
+      const {
+        bankId,
+        createdBy,
+        bank,
+        course,
+        createdAt,
+        updatedAt,
+        showResult,
+        id,
+        // _count,
+        ...safeTest
+      } = test;
+
+      // Return the test info with course title included
+      return {
+        ...safeTest,
+        courseTitle: title,
+        questionCount,
+      };
 
     default:
       throw new Error("Invalid role");
@@ -311,6 +337,7 @@ export const getTests = async (user) => {
       });
 
       // Remove sensitive data for students
+      // const cl = courses.classes;
       return tests.map((test) => {
         const { bankId, showResult, createdBy, ...safeTest } = test;
         return safeTest;
