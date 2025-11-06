@@ -4,8 +4,17 @@ import { getIo } from "../utils/socket.js";
 // in-memory timers for active sessions (cleared on finish)
 const sessionTimers = new Map();
 
-async function endSessionByTimer(sessionId, reason = "duration") {
+export async function endSessionByTimer(sessionId, reason = "duration") {
   try {
+    // ✅ Clear both the timeout and interval first
+    const timers = sessionTimers.get(sessionId);
+    if (timers) {
+      clearTimeout(timers.timeout);
+      clearInterval(timers.interval);
+      sessionTimers.delete(sessionId);
+    }
+
+    // ✅ Fetch session with related data
     const session = await prisma.testSession.findUnique({
       where: { id: sessionId },
       include: {
@@ -14,13 +23,16 @@ async function endSessionByTimer(sessionId, reason = "duration") {
       },
     });
 
+    // ✅ Ignore if already completed or ended
     if (!session || session.endedAt || session.status === "COMPLETED") return;
 
+    // ✅ Compute score safely
     const score = session.answers.reduce(
-      (s, a) => s + (a.isCorrect ? 1 : 0),
+      (total, answer) => total + (answer.isCorrect ? 1 : 0),
       0
     );
 
+    // ✅ Mark as completed
     await prisma.testSession.update({
       where: { id: sessionId },
       data: {
@@ -30,6 +42,7 @@ async function endSessionByTimer(sessionId, reason = "duration") {
       },
     });
 
+    // ✅ Notify clients in that session room
     try {
       const io = getIo();
       io.to(`session_${sessionId}`).emit("time_up", {
@@ -38,12 +51,10 @@ async function endSessionByTimer(sessionId, reason = "duration") {
         reason,
       });
     } catch {
-      // socket not initialized
+      console.warn("Socket not initialized or not connected.");
     }
   } catch (e) {
     console.error("Error ending session by timer:", e);
-  } finally {
-    sessionTimers.delete(sessionId);
   }
 }
 
@@ -78,59 +89,83 @@ export async function startSession({ studentId, testId }) {
     where: { studentId, testId, status: "COMPLETED" },
   });
 
-  console.log("this is the Attempt count:", attemptCount);
-  console.log("this is the attemptsAllowed:", test.attemptsAllowed);
+  console.log("Attempt count:", attemptCount);
+  console.log("Allowed attempts:", test.attemptsAllowed);
 
-  if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed) {
+  if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed)
     throw new Error("Maximum attempts reached for this test");
-  }
 
-  // ✅ Resume existing unfinished session if any
+  // ✅ Check for existing unfinished session
   const existing = await prisma.testSession.findFirst({
     where: { studentId, testId, status: "IN_PROGRESS", endedAt: null },
   });
 
   if (existing) {
+    const answeredCount = await prisma.answer.count({
+      where: { testSessionId: existing.id },
+    });
+
     const questions = test.bank.questions
       .slice(0, 2)
       .map(({ answer, ...rest }) => rest);
-    return { session: existing, questions };
+
+    return {
+      session: existing,
+      questions,
+      progress: {
+        answeredCount,
+        total: test.bank.questions.length,
+      },
+    };
   }
 
-  // ✅ Otherwise, create new session
+  // ✅ Create new session
   const session = await prisma.testSession.create({
     data: { studentId, testId, status: "IN_PROGRESS" },
     include: { answers: true },
   });
 
-  // ✅ Handle timer (duration or endTime)
-  if (test.duration || test.endTime) {
-    const endTimeMs = test.endTime
-      ? new Date(test.endTime).getTime() - now.getTime()
-      : Infinity;
+  // ✅ Set timer (either duration or endTime)
+  const endTimeMs = test.endTime
+    ? new Date(test.endTime).getTime() - now.getTime()
+    : Infinity;
 
-    const durationMs = test.duration ? test.duration * 60 * 1000 : Infinity;
-    const timeoutMs = Math.min(endTimeMs, durationMs);
+  const durationMs = test.duration ? test.duration * 60 * 1000 : Infinity;
+  const timeoutMs = Math.min(endTimeMs, durationMs);
 
-    if (timeoutMs > 0 && timeoutMs !== Infinity) {
-      const timer = setTimeout(
-        () =>
-          endSessionByTimer(
-            session.id,
-            timeoutMs === endTimeMs ? "endTime" : "duration"
-          ),
-        timeoutMs
-      );
-      sessionTimers.set(session.id, timer);
-    }
+  if (timeoutMs > 0 && timeoutMs !== Infinity) {
+    const io = getIo();
+
+    const timeout = setTimeout(
+      () =>
+        endSessionByTimer(
+          session.id,
+          timeoutMs === endTimeMs ? "endTime" : "duration"
+        ),
+      timeoutMs
+    );
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, timeoutMs - (Date.now() - now.getTime()));
+      console.log("remaining time for session", session.id, "is", remaining);
+
+      io.to(`session_${session.id}`).emit("time_left", {
+        sessionId: session.id,
+        timeLeft: remaining,
+      });
+    }, 1000);
+
+    // store both timer references
+    sessionTimers.set(session.id, { timeout, interval });
   }
 
-  // ✅ Return first two questions (hide answers)
+  // ✅ Return first questions (hide answers)
+  const totalQuestions = test.bank.questions.length;
   const questions = test.bank.questions
     .slice(0, 2)
     .map(({ answer, ...rest }) => rest);
 
-  // ✅ Notify client that test started
+  // ✅ Emit test started event
   try {
     const io = getIo();
     io.to(`session_${session.id}`).emit("test_started", {
@@ -138,10 +173,19 @@ export async function startSession({ studentId, testId }) {
       testId,
     });
   } catch {
-    // socket not initialized
+    console.warn("Socket not initialized");
   }
 
-  return { session, questions };
+  // ✅ Return clean structured response
+  return {
+    session,
+    questions,
+    totalQuestions,
+    progress: {
+      answeredCount: 0,
+      total: totalQuestions,
+    },
+  };
 }
 
 export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
@@ -276,6 +320,9 @@ export async function submitAnswerAndGetNext({
   // ✅ Step 4: Find the next 2 questions
   const nextQuestions = questions.slice(lastIndex + 1, lastIndex + 3);
 
+  // show submit button is true if nextQuestions is empty but false if not
+  const showSubmitButton = nextQuestions.length <= 1;
+
   // ✅ Step 5: If no remaining questions, use finishSession()
   if (nextQuestions.length === 0) {
     const result = await finishSession({ sessionId, studentId });
@@ -305,6 +352,7 @@ export async function submitAnswerAndGetNext({
   });
 
   return {
+    showSubmitButton,
     finished: false,
     nextQuestions: publicQuestions,
     progress: {

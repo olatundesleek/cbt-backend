@@ -291,9 +291,9 @@ export async function getAllResults(user, filters = {}) {
   return {
     sessions: sessions.map((session) => ({
       ...session,
-      answers: canViewResults(session, user, session.test)
-        ? session.answers
-        : null,
+      // answers: canViewResults(session, user, session.test)
+      //   ? session.answers
+      //   : null,
     })),
     pagination: {
       page,
@@ -303,6 +303,123 @@ export async function getAllResults(user, filters = {}) {
     },
   };
 }
+
+// export async function getStudentCourseResults(user, options = {}) {
+//   if (user.role !== "STUDENT") {
+//     throw new Error("Only students can access this endpoint");
+//   }
+
+//   const { courseId, startDate, endDate, limit, testType = "ALL" } = options;
+
+//   // Get student's class and enrolled courses
+//   const student = await prisma.user.findUnique({
+//     where: { id: user.id },
+//     include: {
+//       class: {
+//         include: {
+//           courses: true,
+//         },
+//       },
+//     },
+//   });
+
+//   if (!student.class) {
+//     throw new Error("Student not assigned to any class");
+//   }
+
+//   // Get course IDs
+//   const courseIds = courseId
+//     ? [parseInt(courseId)]
+//     : student.class.courses.map((c) => c.id);
+
+//   // Apply limit to number of courses if provided
+//   const limitedCourseIds = limit ? courseIds.slice(0, limit) : courseIds;
+
+//   const results = [];
+
+//   for (const cid of limitedCourseIds) {
+//     const course = await prisma.course.findUnique({
+//       where: { id: cid },
+//       include: {
+//         tests: {
+//           where: {
+//             ...(testType !== "ALL" && { type: testType }),
+//             ...(startDate && { startTime: { gte: new Date(startDate) } }),
+//             ...(endDate && { endTime: { lte: new Date(endDate) } }),
+//           },
+//           orderBy: { startTime: "desc" }, // newest first
+//           take: limit ? limit : undefined, // also limit tests per course
+//           include: {
+//             sessions: {
+//               where: { studentId: user.id },
+//               include: {
+//                 answers: {
+//                   include: { question: true },
+//                 },
+//               },
+//             },
+//           },
+//         },
+//       },
+//     });
+
+//     const stats = await calculateCourseStats(cid, user.id);
+
+//     results.push({
+//       course: {
+//         id: course.id,
+//         title: course.title,
+//         description: course.description,
+//       },
+//       stats,
+//       tests: course.tests
+//         .filter((test) => test.sessions && test.sessions.length > 0) // ✅ keep only tests with sessions
+//         .map((test) => ({
+//           id: test.id,
+//           title: test.title,
+//           type: test.type,
+//           session: {
+//             // if can showresult from test session is true display test, else show unreleased
+//             score: test.sessions[0].score,
+//             startedAt: test.sessions[0].startedAt,
+//             endedAt: test.sessions[0].endedAt,
+//             // answers: canViewResults(test.sessions[0], user, test)
+//             //   ? test.sessions[0].answers
+//             //   : null,
+//           },
+//         })),
+//     });
+//   }
+
+//   // Calculate overall stats
+//   const overallStats = {
+//     totalCourses: results.length,
+//     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
+//     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
+//     averageScore:
+//       results.length > 0
+//         ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
+//           results.length
+//         : 0,
+//     pendingTests: results.reduce(
+//       (sum, r) => sum + (r.stats.totalTests - r.stats.testsAttempted),
+//       0
+//     ),
+//   };
+
+//   return {
+//     student: {
+//       id: student.id,
+//       name: `${student.firstname} ${student.lastname}`,
+//       class: {
+//         id: student.class.id,
+//         className: student.class.className,
+//       },
+//     },
+//     courses: results,
+//     overallStats,
+//   };
+// }
 
 export async function getStudentCourseResults(user, options = {}) {
   if (user.role !== "STUDENT") {
@@ -332,9 +449,7 @@ export async function getStudentCourseResults(user, options = {}) {
     ? [parseInt(courseId)]
     : student.class.courses.map((c) => c.id);
 
-  // Apply limit to number of courses if provided
   const limitedCourseIds = limit ? courseIds.slice(0, limit) : courseIds;
-
   const results = [];
 
   for (const cid of limitedCourseIds) {
@@ -347,15 +462,13 @@ export async function getStudentCourseResults(user, options = {}) {
             ...(startDate && { startTime: { gte: new Date(startDate) } }),
             ...(endDate && { endTime: { lte: new Date(endDate) } }),
           },
-          orderBy: { startTime: "desc" }, // newest first
-          take: limit ? limit : undefined, // also limit tests per course
+          orderBy: { startTime: "desc" },
+          take: limit ? limit : undefined,
           include: {
             sessions: {
               where: { studentId: user.id },
               include: {
-                answers: {
-                  include: { question: true },
-                },
+                answers: { include: { question: true } },
               },
             },
           },
@@ -363,34 +476,60 @@ export async function getStudentCourseResults(user, options = {}) {
       },
     });
 
-    const stats = await calculateCourseStats(cid, user.id);
+    // Filter tests that have sessions
+    const validTests = course.tests.filter(
+      (test) => test.sessions && test.sessions.length > 0
+    );
 
-    results.push({
-      course: {
-        id: course.id,
-        title: course.title,
-        description: course.description,
-      },
-      stats,
-      tests: course.tests.map((test) => ({
-        id: test.id,
-        title: test.title,
-        type: test.type,
-        session: test.sessions[0]
-          ? {
-              score: test.sessions[0].score,
-              startedAt: test.sessions[0].startedAt,
-              endedAt: test.sessions[0].endedAt,
-              answers: canViewResults(test.sessions[0], user, test)
-                ? test.sessions[0].answers
-                : null,
-            }
-          : null,
-      })),
-    });
+    // Compute stats only from visible scores
+    const visibleTestsForStats = validTests.filter(
+      (test) => test.showResult === true || test.type === "TEST"
+    );
+
+    const totalTests = course.tests.length;
+    const completedTests = validTests.length;
+    const visibleScores = visibleTestsForStats.map(
+      (t) => t.sessions[0]?.score || 0
+    );
+
+    const averageScore =
+      visibleScores.length > 0
+        ? visibleScores.reduce((a, b) => a + b, 0) / visibleScores.length
+        : 0;
+
+    const stats = {
+      totalTests,
+      completedTests,
+      averageScore,
+    };
+
+    // Only include courses that have valid tests
+    if (validTests.length > 0) {
+      results.push({
+        course: {
+          id: course.id,
+          title: course.title,
+          description: course.description,
+        },
+        stats,
+        tests: validTests.map((test) => ({
+          id: test.id,
+          title: test.title,
+          type: test.type,
+          session: {
+            score:
+              test.showResult === true || test.type === "TEST"
+                ? test.sessions[0].score
+                : "unreleased",
+            startedAt: test.sessions[0].startedAt,
+            endedAt: test.sessions[0].endedAt,
+          },
+        })),
+      });
+    }
   }
 
-  // Calculate overall stats
+  // Compute overall stats from filtered results
   const overallStats = {
     totalCourses: results.length,
     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
@@ -400,10 +539,6 @@ export async function getStudentCourseResults(user, options = {}) {
         ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
           results.length
         : 0,
-    pendingTests: results.reduce(
-      (sum, r) => sum + (r.stats.totalTests - r.stats.testsAttempted),
-      0
-    ),
   };
 
   return {
