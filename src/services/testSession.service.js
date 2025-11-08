@@ -188,6 +188,70 @@ export async function startSession({ studentId, testId }) {
   };
 }
 
+// export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
+//   const session = await prisma.testSession.findUnique({
+//     where: { id: sessionId },
+//     include: {
+//       test: {
+//         include: {
+//           bank: {
+//             include: {
+//               questions: { orderBy: { id: "asc" } }, // ✅ correct path
+//             },
+//           },
+//         },
+//       },
+//     },
+//   });
+
+//   if (!session?.test?.bank?.questions?.length)
+//     throw new Error("No questions found for this test");
+
+//   const questions = session.test.bank.questions;
+
+//   if (questionNumber < 1 || questionNumber > questions.length)
+//     throw new Error("Invalid question number");
+
+//   const startIndex = questionNumber - 1;
+//   const endIndex = Math.min(startIndex + 2, questions.length);
+
+//   // Remove the correct answer
+//   const pair = questions
+//     .slice(startIndex, endIndex)
+//     .map(({ answer, ...rest }) => rest);
+
+//   // Fetch previously selected options
+//   const questionIds = pair.map((p) => p.id).filter(Boolean);
+//   const answers =
+//     questionIds.length > 0
+//       ? await prisma.answer.findMany({
+//           where: { testSessionId: sessionId, questionId: { in: questionIds } },
+//           select: { questionId: true, selectedOption: true, createdAt: true },
+//         })
+//       : [];
+
+//   const answerMap = new Map(
+//     answers.map((a) => [
+//       a.questionId,
+//       { selectedOption: a.selectedOption, answeredAt: a.createdAt },
+//     ])
+//   );
+
+//   return {
+//     showSubmitButton: endIndex >= questions.length, // true if last batch
+//     questions: pair,
+//     index: startIndex + 1, // 1-based for frontend
+//     total: questions.length,
+//     answered: pair.map((p, i) => ({
+//       questionId: p.id,
+//       questionNumber: startIndex + i + 1,
+//       isAnswered: answerMap.has(p.id),
+//       previousAnswer: answerMap.get(p.id)?.selectedOption,
+//       answeredAt: answerMap.get(p.id)?.answeredAt,
+//     })),
+//   };
+// }
+
 export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
@@ -215,40 +279,46 @@ export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
   const startIndex = questionNumber - 1;
   const endIndex = Math.min(startIndex + 2, questions.length);
 
-  // Remove the correct answer
-  const pair = questions
+  // Remove correct answers
+  const nextQuestionsSlice = questions
     .slice(startIndex, endIndex)
     .map(({ answer, ...rest }) => rest);
 
   // Fetch previously selected options
-  const questionIds = pair.map((p) => p.id).filter(Boolean);
-  const answers =
+  const questionIds = nextQuestionsSlice.map((q) => q.id).filter(Boolean);
+  const existingAnswers =
     questionIds.length > 0
       ? await prisma.answer.findMany({
           where: { testSessionId: sessionId, questionId: { in: questionIds } },
-          select: { questionId: true, selectedOption: true, createdAt: true },
+          select: { questionId: true, selectedOption: true },
         })
       : [];
 
   const answerMap = new Map(
-    answers.map((a) => [
-      a.questionId,
-      { selectedOption: a.selectedOption, answeredAt: a.createdAt },
-    ])
+    existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
 
+  // Map questions with existing selected options
+  const nextQuestions = nextQuestionsSlice.map((q) => ({
+    ...q,
+    selectedOption: answerMap.get(q.id) || null,
+  }));
+
+  const showSubmitButton = endIndex >= questions.length;
+
+  // Count all previously answered questions
+  const answeredCount = await prisma.answer.count({
+    where: { testSessionId: sessionId },
+  });
+
   return {
-    questions: pair,
-    index: startIndex + 1, // 1-based for frontend
-    total: questions.length,
-    answered: pair.map((p, i) => ({
-      questionId: p.id,
-      questionNumber: startIndex + i + 1,
-      isAnswered: answerMap.has(p.id),
-      previousAnswer: answerMap.get(p.id)?.selectedOption,
-      answeredAt: answerMap.get(p.id)?.answeredAt,
-    })),
-    finished: endIndex >= questions.length, // true if last batch
+    showSubmitButton,
+    finished: false,
+    nextQuestions,
+    progress: {
+      answeredCount,
+      total: questions.length,
+    },
   };
 }
 
@@ -300,16 +370,9 @@ export async function submitAnswerAndGetNext({
   if (session.studentId !== studentId)
     throw new Error("Unauthorized access to session");
   if (session.endedAt || session.status === "COMPLETED")
-    throw new Error("Session already finished");
+    throw new Error("Session already ended");
 
   const questions = session.test.bank.questions;
-
-  // // if answer is empty or not an array just go to next questions
-  // if (!answers || answers.length === 0) {
-  //   // Find the next 2 questions after the last answered question
-  //   const lastIndex = questions.findIndex((q) => q.id === lastSubmittedId);
-  //   const nextQuestions = questions.slice(lastIndex + 1, lastIndex + 3);
-  // }
 
   // ✅ Step 2: Save up to 2 answers
   for (const a of answers) {
