@@ -50,7 +50,7 @@ router.post(
   authenticate,
   authorizeRoles("STUDENT"),
   validateBody(submitAnswersSchema),
-  sessionController.submitAndNext
+  sessionController.submitAndPrevious
 );
 
 // finish session manually

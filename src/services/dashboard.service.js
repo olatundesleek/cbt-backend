@@ -8,6 +8,10 @@ export const fetchDashboardData = async (role, userId) => {
     // 🔹 ADMIN DASHBOARD
     if (role === "ADMIN") {
       dashboardData = {
+        adminName: await prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstname: true, lastname: true },
+        }),
         studentCount: await prisma.user.count({
           where: { role: "STUDENT" },
         }),
@@ -23,6 +27,10 @@ export const fetchDashboardData = async (role, userId) => {
     // 🔹 TEACHER DASHBOARD
     else if (role === "TEACHER") {
       dashboardData = {
+        teacherName: await prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstname: true, lastname: true },
+        }),
         classCount: await prisma.class.count({
           where: { teacherId: userId },
         }),
@@ -50,7 +58,7 @@ export const fetchDashboardData = async (role, userId) => {
       // Fetch student details once to avoid multiple DB hits
       const student = await prisma.user.findUnique({
         where: { id: userId },
-        include: { class: true },
+        include: { class: true }, // includes the class relation
       });
 
       if (!student.classId) {
@@ -63,6 +71,7 @@ export const fetchDashboardData = async (role, userId) => {
       const classId = student.classId;
 
       dashboardData = {
+        studentName: `${student.firstname} ${student.lastname}`,
         className: student.class.className,
         totalTests: await prisma.test.count({
           where: {

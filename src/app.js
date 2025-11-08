@@ -58,6 +58,7 @@ app.use("/api/students", studentRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/students", studentRoutes);
 
 app.get("/", (req, res) => res.json({ ok: true }));
 
