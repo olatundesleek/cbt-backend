@@ -304,8 +304,19 @@ export async function submitAnswerAndGetNext({
 
   const questions = session.test.bank.questions;
 
+  // // if answer is empty or not an array just go to next questions
+  // if (!answers || answers.length === 0) {
+  //   // Find the next 2 questions after the last answered question
+  //   const lastIndex = questions.findIndex((q) => q.id === lastSubmittedId);
+  //   const nextQuestions = questions.slice(lastIndex + 1, lastIndex + 3);
+  // }
+
   // ✅ Step 2: Save up to 2 answers
   for (const a of answers) {
+    if (!a.selectedOption || a.selectedOption === 0) {
+      // If no answer is selected, just go to the next question
+      continue;
+    }
     await submitAnswerOnly({
       sessionId,
       questionId: a.questionId,
@@ -389,6 +400,10 @@ export async function submitAnswerAndGetPrevious({
 
   // Save submitted answers
   for (const a of answers) {
+    if (!a.selectedOption || a.selectedOption === 0) {
+      // If no answer is selected, just go to the next question
+      continue;
+    }
     await submitAnswerOnly({
       sessionId,
       questionId: a.questionId,

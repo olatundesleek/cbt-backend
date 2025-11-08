@@ -53,8 +53,8 @@ export const assignStudentToClass = async (studentId, classId, requester) => {
     });
     if (!klass) throw new Error("Class not found");
 
-    // Only ADMIN or TEACHER (who teaches the class) can assign
-    if (requester.role === "TEACHER" && klass.teacherId !== requester.id) {
+    // Only ADMIN can assign
+    if (requester.role !== "ADMIN") {
       throw new Error("Forbidden");
     }
 

@@ -26,7 +26,7 @@ export const submitAnswersSchema = Joi.object({
     .items(
       Joi.object({
         questionId: Joi.number().required(),
-        selectedOption: Joi.string().required(),
+        selectedOption: Joi.string().optional(),
       })
     )
     .min(1)

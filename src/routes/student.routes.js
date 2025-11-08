@@ -4,6 +4,7 @@ import {
   assignClassSchema,
   getStudentSchema,
   updateStudentPasswordSchema,
+  assignStudentSchema,
 } from "../validators/student.validator.js";
 import {
   validateBody,
@@ -32,8 +33,8 @@ router.get(
 
 // Assign a student to a class (ADMIN )
 router.post(
-  "/:username/assign-class",
-  validateParams(getStudentSchema),
+  "/:studentId/assign-class",
+  validateParams(assignStudentSchema),
   validateBody(assignClassSchema),
   authenticate,
   authorizeRoles("ADMIN"),
