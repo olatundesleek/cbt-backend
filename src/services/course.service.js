@@ -2,14 +2,14 @@ import prisma from "../config/prisma.js";
 
 export const createCourse = async (title, description, teacherId, userRole) => {
   try {
-    // ✅ Ensure only admin can create courses
+    //  Ensure only admin can create courses
     if (userRole !== "ADMIN") {
       throw new Error("Only admins can create courses");
     }
 
     const data = { title, description };
 
-    // ✅ If teacher is provided, validate and connect
+    //  If teacher is provided, validate and connect
     if (teacherId) {
       const teacher = await prisma.user.findUnique({
         where: { id: parseInt(teacherId) },
@@ -23,7 +23,7 @@ export const createCourse = async (title, description, teacherId, userRole) => {
       data.teacher = { connect: { id: parseInt(teacherId) } };
     }
 
-    // ✅ Create course
+    //  Create course
     const newCourse = await prisma.course.create({
       data,
       include: {

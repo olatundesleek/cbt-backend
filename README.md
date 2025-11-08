@@ -752,6 +752,115 @@ Response:
 }
 ```
 
+#### Profile
+
+Get Profile
+
+Fetch the authenticated user's profile information.
+
+Roles: Authenticated users
+
+```http
+GET /api/profile
+```
+
+Response:
+
+{
+"success": true,
+"message": "Profile fetched successfully",
+"data": {
+"id": 1,
+"firstname": "John",
+"lastname": "Doe",
+"username": "johndoe",
+"role": "STUDENT",
+"class": {
+"id": 1,
+"className": "Class 1A"
+}
+}
+}
+
+#### Update Profile
+
+Update profile details such as first name, last name, or username.
+
+Roles: Authenticated users
+
+Validation: At least one field must be provided (firstname, lastname, or username)
+
+```http
+PATCH /api/profile
+```
+
+Request Body:
+
+{
+"firstname": "Jane",
+"lastname": "Doe",
+"username": "janedoe"
+}
+
+Response:
+
+{
+"success": true,
+"message": "Profile updated successfully",
+"data": {
+"id": 1,
+"firstname": "Jane",
+"lastname": "Doe",
+"username": "janedoe",
+"role": "STUDENT"
+}
+}
+
+#### Update Password
+
+Update the authenticated user's password.
+
+Roles: Authenticated users
+
+Validation: confirmPassword must match newPassword
+
+```http
+PATCH /api/profile/password
+```
+
+Request Body:
+
+{
+"currentPassword": "oldpassword123",
+"newPassword": "newpassword123",
+"confirmPassword": "newpassword123"
+}
+
+Response:
+
+{
+"success": true,
+"message": "Password updated successfully"
+}
+
+#### Students
+
+List Students
+
+Retrieve a list of students.
+
+Roles: ADMIN → all students, TEACHER → students in teacher's classes
+
+```http
+GET /api/students
+```
+
+Response:
+
+{
+"success": true,
+"message": "Students fetched
+
 ### Results
 
 #### Get Test Results (Teacher/Admin)
