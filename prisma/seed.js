@@ -67,7 +67,7 @@ async function main() {
     },
   });
 
-  // ✅ FIXED HERE
+  //  FIXED HERE
   const bank = await prisma.questionBank.upsert({
     where: { questionBankName: "Math Question Bank" },
     update: {},
@@ -75,11 +75,11 @@ async function main() {
       questionBankName: "Math Question Bank",
       description: "Bank for Algebra and Geometry questions",
       createdBy: teacher.id,
-      courseId: course.id, // ✅ use courseId instead of course.connect
+      courseId: course.id, //  use courseId instead of course.connect
     },
   });
 
-  // ✅ FIXED HERE TOO
+  //  FIXED HERE TOO
   const test = await prisma.test.upsert({
     where: { title: "Math Practice Test" },
     update: {},
@@ -88,8 +88,8 @@ async function main() {
       type: "TEST",
       isActive: true,
       createdBy: teacher.id,
-      courseId: course.id, // ✅ use courseId
-      bankId: bank.id, // ✅ use bankId
+      courseId: course.id, //  use courseId
+      bankId: bank.id, //  use bankId
     },
   });
 
@@ -118,7 +118,7 @@ async function main() {
     });
   }
 
-  console.log("✅ Seeding completed successfully!");
+  console.log(" Seeding completed successfully!");
 }
 
 main()

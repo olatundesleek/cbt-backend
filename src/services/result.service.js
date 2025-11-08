@@ -373,7 +373,7 @@ export async function getAllResults(user, filters = {}) {
 //       },
 //       stats,
 //       tests: course.tests
-//         .filter((test) => test.sessions && test.sessions.length > 0) // ✅ keep only tests with sessions
+//         .filter((test) => test.sessions && test.sessions.length > 0) //  keep only tests with sessions
 //         .map((test) => ({
 //           id: test.id,
 //           title: test.title,

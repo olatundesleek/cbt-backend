@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-// ✅ Single Question Schema
+//  Single Question Schema
 const singleQuestionSchema = Joi.object({
   text: Joi.string().min(10).max(500).required(),
 
@@ -25,13 +25,13 @@ const singleQuestionSchema = Joi.object({
   bankId: Joi.number().integer().required(),
 });
 
-// ✅ Allow single or multiple questions
+//  Allow single or multiple questions
 export const createQuestionSchema = Joi.alternatives().try(
   singleQuestionSchema,
   Joi.array().items(singleQuestionSchema).min(1).max(100)
 );
 
-// ✅ Update Question Schema
+//  Update Question Schema
 export const updateQuestionSchema = Joi.object({
   text: Joi.string().min(10).max(500).optional(),
 
@@ -45,12 +45,12 @@ export const updateQuestionSchema = Joi.object({
   marks: Joi.number().integer().min(1).optional(),
 }).min(1); // At least one field must be provided
 
-// ✅ Get Questions Schema
+//  Get Questions Schema
 export const getQuestionsSchema = Joi.object({
   bankId: Joi.number().integer().required(),
 });
 
-// ✅ Question Bank Validators
+//  Question Bank Validators
 export const createQuestionBankSchema = Joi.object({
   questionBankName: Joi.string().min(3).max(100).required(),
   description: Joi.string().min(10).max(500).optional(),
