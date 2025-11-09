@@ -10,33 +10,64 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const PORT = process.env.PORT || 4000;
-
 const server = http.createServer(app);
 
-// Initialize Socket.IO and expose via util
+// Allowed origins for Socket.IO and Express CORS
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://192.168.1.120",
+  "http://192.168.1.120:3000",
+  "https://escrow-rouge.vercel.app",
+];
+
+// =========================
+// Socket.IO Initialization
+// =========================
 const io = new IOServer(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "*",
+    origin: (origin, callback) => {
+      // allow requests with no origin (mobile apps, curl)
+      if (!origin) return callback(null, true);
+
+      // allow listed origins or *.vercel.app
+      if (
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/.*\.vercel\.app$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
+// Make io accessible in your app
 setIo(io);
 
+// =========================
+// Socket.IO Events
+// =========================
 io.on("connection", (socket) => {
-  // clients can join session rooms
+  console.log("New client connected:", socket.id);
+
   socket.on("join_session", (sessionId) => {
     try {
       socket.join(`session_${sessionId}`);
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   });
 
   socket.on("leave_session", (sessionId) => {
     try {
       socket.leave(`session_${sessionId}`);
     } catch (e) {}
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
   });
 });
 
