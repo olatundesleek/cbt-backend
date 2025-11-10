@@ -96,19 +96,44 @@ export const deleteCourse = async (courseId) => {
 };
 
 export async function getCoursesForUser(user) {
-  if (user.role === "ADMIN")
-    return prisma.course.findMany({ include: { teacher: true } });
-  if (user.role === "TEACHER")
-    return prisma.course.findMany({
-      where: { teacherId: user.id },
-      include: { teacher: true },
-    });
-  if (user.role === "STUDENT")
-    return prisma.course.findMany({
-      where: { classes: { some: { students: { some: { id: user.id } } } } },
-      include: { teacher: true },
-    });
-  throw new Error("Invalid role");
+  try {
+    if (user.role === "ADMIN") {
+      return prisma.course.findMany({
+        include: {
+          teacher: { select: { id: true, firstname: true, lastname: true } },
+        },
+      });
+    }
+
+    if (user.role === "TEACHER") {
+      return prisma.course.findMany({
+        where: { teacherId: user.id },
+        include: {
+          teacher: { select: { id: true, firstname: true, lastname: true } },
+        },
+      });
+    }
+
+    if (user.role === "STUDENT") {
+      return prisma.course.findMany({
+        where: {
+          classes: {
+            some: {
+              students: { some: { id: user.id } },
+            },
+          },
+        },
+        include: {
+          teacher: { select: { id: true, firstname: true, lastname: true } },
+        },
+      });
+    }
+
+    throw new Error("Invalid role");
+  } catch (error) {
+    console.error("Error fetching courses for user:", error);
+    throw error;
+  }
 }
 
 // export const createCourse = async (courseName, title, desc) => {

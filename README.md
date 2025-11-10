@@ -282,6 +282,128 @@ Response:
 }
 ```
 
+# Teachers
+
+## Get All Teachers (Admin Only)
+
+```http
+GET /api/teachers
+```
+
+Fetch all teachers in the system. Accessible only by users with the ADMIN role.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Teachers fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "firstname": "John",
+      "lastname": "Doe",
+      "username": "johndoe",
+      "role": "TEACHER",
+      "createdAt": "2025-10-30T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "firstname": "Jane",
+      "lastname": "Smith",
+      "username": "janesmith",
+      "role": "TEACHER",
+      "createdAt": "2025-10-30T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Example Errors:**
+
+```json
+{
+  "success": false,
+  "message": "You are not authorized to perform this action"
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Unable to fetch teachers"
+}
+```
+
+## Assign Class Teacher (Admin Only)
+
+```http
+PATCH /api/teachers/:classId/assign-class-teacher
+```
+
+Assigns a teacher to a specific class. Accessible only by users with the ADMIN role.
+
+**Request Params:**
+
+```json
+{
+  "classId": 2
+}
+```
+
+**Request Body:**
+
+```json
+{
+  "teacherId": 5
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Teacher assigned to class",
+  "data": {
+    "id": 2,
+    "className": "Grade 10 - A",
+    "teacher": {
+      "id": 5,
+      "firstname": "Jane",
+      "lastname": "Smith"
+    }
+  }
+}
+```
+
+**Example Errors:**
+
+```json
+{
+  "success": false,
+  "message": "You are not authorized to perform this action"
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Invalid teacher or class ID"
+}
+```
+
+**Validation Rules:**
+
+- **Params:**
+  - `classId` — integer, positive, required.
+- **Body:**
+  - `teacherId` — integer, positive, required.
+
+**Authorization:**
+
+Only ADMIN users can access these endpoints.
+
 ### Course Management
 
 #### Create Course (Admin only)
