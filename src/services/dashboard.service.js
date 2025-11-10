@@ -267,7 +267,7 @@ export const fetchDashboardData = async (role, userId) => {
         activeTests: activeTestsWithProgress,
         recentResults: await getStudentCourseResults(
           { id: userId, role: "STUDENT" },
-          { limit: 5 }
+          { testLimit: 5 }
         ),
         completedTests: await prisma.testSession.count({
           where: { studentId: userId, status: "COMPLETED" },

@@ -147,7 +147,7 @@ export async function startSession({ studentId, testId }) {
 
     const interval = setInterval(() => {
       const remaining = Math.max(0, timeoutMs - (Date.now() - now.getTime()));
-      console.log("remaining time for session", session.id, "is", remaining);
+      // console.log("remaining time for session", session.id, "is", remaining);
 
       io.to(`session_${session.id}`).emit("time_left", {
         sessionId: session.id,
@@ -516,85 +516,6 @@ export async function submitAnswerAndGetPrevious({
   };
 }
 
-// export async function finishSession({ sessionId, studentId }) {
-//   const session = await prisma.testSession.findUnique({
-//     where: { id: sessionId },
-//     include: {
-//       answers: { include: { question: true } },
-//       test: true,
-//     },
-//   });
-
-//   if (!session) throw new Error("Session not found");
-//   if (session.studentId !== studentId) throw new Error("Not your session");
-//   if (session.endedAt || session.status === "COMPLETED") return session;
-
-//   console.log("this is the test type:", session.test.type);
-
-//   // 🧮 Compute score (only for TEST)
-//   const score =
-//     session.test.type === "TEST"
-//       ? session.answers.reduce((s, a) => s + (a.isCorrect ? 1 : 0), 0)
-//       : null;
-
-//   //  Mark the session as completed
-//   const updated = await prisma.testSession.update({
-//     where: { id: sessionId },
-//     data: {
-//       endedAt: new Date(),
-//       status: "COMPLETED",
-//       score: score ?? undefined,
-//     },
-//     include: { test: true },
-//   });
-
-//   // 🧹 Clear any active timer
-//   if (sessionTimers.has(sessionId)) {
-//     clearTimeout(sessionTimers.get(sessionId));
-//     sessionTimers.delete(sessionId);
-//   }
-
-//   //  For non-TEST sessions, hide answers, questions, and score
-//   if (session.test.type !== "TEST") {
-//     return {
-//       id: updated.id,
-//       testId: updated.testId,
-//       studentId: updated.studentId,
-//       status: updated.status,
-//       startedAt: updated.startedAt,
-//       endedAt: updated.endedAt,
-//       type: updated.test.type,
-//     };
-//   }
-
-//   //  For TEST — show selected + correct answers
-//   const formattedAnswers = session.answers.map((a) => {
-//     const { answer: correctAnswer, options, ...restQuestion } = a.question;
-
-//     return {
-//       id: a.id,
-//       questionId: a.questionId,
-//       selectedOption: a.selectedOption,
-//       isCorrect: a.isCorrect,
-//       question: {
-//         ...restQuestion,
-//         options: Array.isArray(options)
-//           ? options
-//           : typeof options === "string"
-//           ? JSON.parse(options)
-//           : [],
-//         correctAnswer, //  include correct answer for review
-//       },
-//     };
-//   });
-
-//   return {
-//     ...updated,
-//     score,
-//     answers: formattedAnswers,
-//   };
-// }
-
 export async function finishSession({ sessionId, studentId }) {
   // Fetch the session with answers and test type
   const session = await prisma.testSession.findUnique({
@@ -666,10 +587,8 @@ export async function finishSession({ sessionId, studentId }) {
 
   console.log("Finishing session for type:", session.test.type);
 
-  // Compute score for TEST
-  const score =
-    session.test.type === "TEST" ? computeScore(session.answers) : null;
-
+  // Compute score
+  const score = computeScore(session.answers);
   // Mark session as completed
   const updated = await prisma.testSession.update({
     where: { id: sessionId },

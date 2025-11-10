@@ -68,7 +68,21 @@ export const assignStudentToClass = async (studentId, classId, requester) => {
     const updated = await prisma.user.update({
       where: { id: parseInt(studentId) },
       data: { class: { connect: { id: parseInt(classId) } } },
-      include: { class: true },
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        username: true,
+        role: true,
+        class: {
+          include: {
+            teacher: {
+              select: { id: true, firstname: true, lastname: true },
+            },
+            courses: true,
+          },
+        },
+      },
     });
 
     return updated;
