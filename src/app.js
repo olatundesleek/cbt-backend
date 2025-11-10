@@ -9,6 +9,7 @@ import sessionRoutes from "./routes/testSession.routes.js";
 import classRoutes from "./routes/class.routes.js";
 import resultRoutes from "./routes/result.routes.js";
 import studentRoutes from "./routes/student.routes.js";
+import teacherRoutes from "./routes/teacher.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -59,6 +60,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/teachers", teacherRoutes);
 
 app.get("/", (req, res) => res.json({ ok: true }));
 

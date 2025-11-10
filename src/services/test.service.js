@@ -305,6 +305,7 @@ export const getTests = async (user) => {
         throw error;
       }
 
+      // Fetch all tests for the student's class
       const tests = await prisma.test.findMany({
         where: {
           course: {
@@ -319,6 +320,15 @@ export const getTests = async (user) => {
           course: {
             select: {
               title: true,
+            },
+          },
+          sessions: {
+            where: {
+              studentId: user.id,
+              status: "IN_PROGRESS", // only fetch in-progress sessions
+            },
+            select: {
+              id: true,
             },
           },
           bank: {
@@ -336,11 +346,18 @@ export const getTests = async (user) => {
         },
       });
 
-      // Remove sensitive data for students
-      // const cl = courses.classes;
+      // Map session info into each test if there is an in-progress session
       return tests.map((test) => {
         const { bankId, showResult, createdBy, ...safeTest } = test;
-        return safeTest;
+
+        const inProgressSession = test.sessions[0]; // will be undefined if no in-progress session
+
+        return {
+          ...safeTest,
+          ...(inProgressSession
+            ? { sessionId: inProgressSession.id, progress: "in-progress" }
+            : {}),
+        };
       });
 
     default:

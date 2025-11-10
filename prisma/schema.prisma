@@ -76,7 +76,7 @@ model Test {
   endTime    DateTime?
   duration   Int?
   attemptsAllowed Int?       @default(1)
-  passMark   Int?
+  passMark   Int
   courseId   Int
   course     Course       @relation(fields: [courseId], references: [id])
 

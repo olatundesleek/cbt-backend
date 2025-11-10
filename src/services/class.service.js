@@ -93,58 +93,66 @@ export const deleteClass = async (classId) => {
 };
 
 export const getClassesForUser = async (user) => {
-  // Implementation for fetching classes for a specific user
+  try {
+    const role = user.role;
 
-  const role = user.role 
-
-  if (role === "ADMIN") {
-    return await prisma.class.findMany({
-      include: {
-        teacher: {
-          select: {
-            id: true,
-            firstname: true,
-            lastname: true,
-          },
-        },
-        courses: true,
-      },
-    });
-  }
-  if (role === "TEACHER") {
-    return prisma.class.findMany({
-      where: { teacherId: user.id },
-      include: {
-        teacher: {
-          select: {
-            id: true,
-            firstname: true,
-            lastname: true,
-          },
-        },
-        courses: true,
-      },
-    });
-  } if (role === "STUDENT") {
-    const student = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        enrolledClasses: {
-          include: {
-            teacher: {
-              select: {
-                id: true,
-                firstname: true,
-                lastname: true,
-              },
+    if (role === "ADMIN") {
+      return await prisma.class.findMany({
+        include: {
+          teacher: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
             },
-            courses: true,
+          },
+          courses: true,
+        },
+      });
+    }
+
+    if (role === "TEACHER") {
+      return await prisma.class.findMany({
+        where: { teacherId: user.id },
+        include: {
+          teacher: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+            },
+          },
+          courses: true,
+        },
+      });
+    }
+
+    if (role === "STUDENT") {
+      const student = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          class: {
+            include: {
+              teacher: {
+                select: {
+                  id: true,
+                  firstname: true,
+                  lastname: true,
+                },
+              },
+              courses: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return student?.enrolledClasses || [];
-  } 
-  throw new Error("Invalid role");
+      // Return an array for consistency with other roles
+      return student?.class ? [student.class] : [];
+    }
+
+    throw new Error("Invalid role");
+  } catch (error) {
+    console.error("Error fetching classes for user:", error);
+    throw error;
+  }
 };
