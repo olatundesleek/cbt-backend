@@ -418,7 +418,8 @@ Request body:
 {
   "title": "Mathematics 101",
   "description": "Introduction to Basic Mathematics",
-  "teacherId": 1
+  "teacherId": 1,
+  "courses": [1, 2] //courses are optional during class creation
 }
 ```
 
@@ -517,26 +518,50 @@ Response:
 
 ### Tests
 
+Perfect! I can format your **Create Test endpoint** in the same style as your Teachers and Results sections so it’s ready to paste directly into your README. Here’s the full Markdown:
+
+````markdown
 #### Create Test
 
-\`\`\`http
+```http
 POST /api/tests
-\`\`\`
+```
+````
 
-Request body:
+Create a new test.
+Accessible by users with the **TEACHER** or **ADMIN** role.
+
+### Request Body
 
 ```json
 {
   "title": "Midterm Exam",
   "type": "EXAM",
+  "testState": "scheduled",
+  "startTime": "2025-11-01T09:00:00Z",
+  "endTime": "2025-11-01T11:00:00Z",
+  "duration": 120,
   "courseId": 1,
   "bankId": 1,
-  "startTime": "2025-11-01T09:00:00Z",
-  "endTime": "2025-11-01T11:00:00Z"
+  "attemptsAllowed": 1,
+  "passMark": 50
 }
 ```
 
-Response:
+### Validation Rules
+
+- `title` — string, required.
+- `type` — "TEST" or "EXAM", required.
+- `testState` — "active", "inactive", "scheduled", or "completed", required.
+- `startTime` — ISO date, must be in the future.
+- `endTime` — ISO date, must be after `startTime`.
+- `duration` — number of minutes, between 1 and 180.
+- `courseId` — number, required.
+- `bankId` — number, required.
+- `attemptsAllowed` — integer, 1–10, default 1.
+- `passMark` — integer, 0–100, required.
+
+### Response
 
 ```json
 {
@@ -555,6 +580,32 @@ Response:
   }
 }
 ```
+
+### Example Errors
+
+```json
+{
+  "success": false,
+  "message": "Test title is required"
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Start time must be in the future"
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "End time must be after start time"
+}
+```
+
+````
+
 
 #### Get Tests
 
@@ -591,7 +642,7 @@ Response (Teacher):
     }
   ]
 }
-```
+````
 
 #### Get Test by ID
 

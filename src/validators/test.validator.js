@@ -35,6 +35,21 @@ export const createTestSchema = Joi.object({
     "number.base": "Question bank ID must be a number",
     "any.required": "Question bank ID is required",
   }),
+  attemptsAllowed: Joi.number()
+    .required()
+    .integer()
+    .min(1)
+    .max(10)
+    .default(1)
+    .messages({
+      "number.min": "At least 1 attempt is required",
+      "number.max": "Attempts cannot exceed 10",
+    }),
+  passMark: Joi.number().integer().min(0).max(100).required().messages({
+    "number.min": "Pass mark cannot be less than 0",
+    "number.max": "Pass mark cannot exceed 100",
+    "any.required": "Pass mark is required",
+  }),
 });
 
 export const updateTestSchema = Joi.object({
