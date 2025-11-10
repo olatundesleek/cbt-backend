@@ -53,8 +53,8 @@ export const getQuestionsSchema = Joi.object({
 //  Question Bank Validators
 export const createQuestionBankSchema = Joi.object({
   questionBankName: Joi.string().min(3).max(100).required(),
-  description: Joi.string().min(10).max(500).optional(),
-  courseId: Joi.number().integer().optional(),
+  description: Joi.string().min(10).max(500).required(),
+  courseId: Joi.number().integer().required(),
 });
 
 export const updateQuestionBankSchema = Joi.object({
