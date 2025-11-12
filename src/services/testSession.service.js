@@ -59,6 +59,16 @@ export async function endSessionByTimer(sessionId, reason = "duration") {
 }
 
 export async function startSession({ studentId, testId }) {
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: {
+      id: true,
+      username: true,
+      firstname: true,
+      lastname: true,
+    },
+  });
+
   const test = await prisma.test.findUnique({
     where: { id: testId },
     include: {
@@ -178,6 +188,7 @@ export async function startSession({ studentId, testId }) {
 
   //  Return clean structured response
   return {
+    student,
     session,
     questions,
     totalQuestions,
@@ -187,70 +198,6 @@ export async function startSession({ studentId, testId }) {
     },
   };
 }
-
-// export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
-//   const session = await prisma.testSession.findUnique({
-//     where: { id: sessionId },
-//     include: {
-//       test: {
-//         include: {
-//           bank: {
-//             include: {
-//               questions: { orderBy: { id: "asc" } }, //  correct path
-//             },
-//           },
-//         },
-//       },
-//     },
-//   });
-
-//   if (!session?.test?.bank?.questions?.length)
-//     throw new Error("No questions found for this test");
-
-//   const questions = session.test.bank.questions;
-
-//   if (questionNumber < 1 || questionNumber > questions.length)
-//     throw new Error("Invalid question number");
-
-//   const startIndex = questionNumber - 1;
-//   const endIndex = Math.min(startIndex + 2, questions.length);
-
-//   // Remove the correct answer
-//   const pair = questions
-//     .slice(startIndex, endIndex)
-//     .map(({ answer, ...rest }) => rest);
-
-//   // Fetch previously selected options
-//   const questionIds = pair.map((p) => p.id).filter(Boolean);
-//   const answers =
-//     questionIds.length > 0
-//       ? await prisma.answer.findMany({
-//           where: { testSessionId: sessionId, questionId: { in: questionIds } },
-//           select: { questionId: true, selectedOption: true, createdAt: true },
-//         })
-//       : [];
-
-//   const answerMap = new Map(
-//     answers.map((a) => [
-//       a.questionId,
-//       { selectedOption: a.selectedOption, answeredAt: a.createdAt },
-//     ])
-//   );
-
-//   return {
-//     showSubmitButton: endIndex >= questions.length, // true if last batch
-//     questions: pair,
-//     index: startIndex + 1, // 1-based for frontend
-//     total: questions.length,
-//     answered: pair.map((p, i) => ({
-//       questionId: p.id,
-//       questionNumber: startIndex + i + 1,
-//       isAnswered: answerMap.has(p.id),
-//       previousAnswer: answerMap.get(p.id)?.selectedOption,
-//       answeredAt: answerMap.get(p.id)?.answeredAt,
-//     })),
-//   };
-// }
 
 export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
   const session = await prisma.testSession.findUnique({

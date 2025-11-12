@@ -77,6 +77,14 @@ export const updateTestSchema = Joi.object({
     "number.min": "Duration must be at least 1 minute",
     "number.max": "Duration cannot exceed 300 minutes",
   }),
+  courseId: Joi.number().required().messages({
+    "number.base": "Course ID must be a number",
+    "any.required": "Course ID is required",
+  }),
+  bankId: Joi.number().required().messages({
+    "number.base": "Question bank ID must be a number",
+    "any.required": "Question bank ID is required",
+  }),
 });
 
 export const testIdSchema = Joi.object({

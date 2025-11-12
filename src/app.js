@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+
 import authRoutes from "./routes/auth.routes.js";
 import courseRoutes from "./routes/course.routes.js";
 import testRoutes from "./routes/test.routes.js";
@@ -13,41 +15,49 @@ import teacherRoutes from "./routes/teacher.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import cookieParser from "cookie-parser";
+
 const app = express();
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.1.120",
+  "http://cbt.local:3000",
   "http://192.168.1.120:3000",
   "https://escrow-rouge.vercel.app",
-  "chrome-extension://ophmdkgfcjapomjdpfobjfbihojchbko",
-  "*.vercel.app",
 ];
+
+const isProduction = process.env.NODE_ENV === "production";
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      // ✅ Allow all origins in dev/local
+      if (!isProduction) {
+        return callback(null, true);
+      }
+
+      // ✅ Restrict in production
       if (
+        !origin ||
         allowedOrigins.includes(origin) ||
         /^https:\/\/.*\.vercel\.app$/.test(origin)
       ) {
         return callback(null, true);
-      } else {
-        return callback(new Error("Not allowed by CORS"));
       }
+
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
 app.options("*", cors());
-
 app.use(express.json());
-
 app.use(cookieParser());
 
+// =========================
+// Routes
+// =========================
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/tests", testRoutes);
@@ -59,7 +69,6 @@ app.use("/api/students", studentRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/results", resultRoutes);
-app.use("/api/students", studentRoutes);
 app.use("/api/teachers", teacherRoutes);
 
 app.get("/", (req, res) => res.json({ ok: true }));
