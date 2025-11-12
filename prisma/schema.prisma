@@ -18,6 +18,8 @@ enum TestType {
   EXAM
 }
 
+
+
 enum SessionStatus {
   IN_PROGRESS
   COMPLETED
@@ -90,13 +92,9 @@ model Test {
   createdAt  DateTime     @default(now())
 }
 
-enum testType {
-  ACTIVE   
-  SCHEDULED   
-  COMPLETED   
-  INACTIVE     
-  
-}
+
+
+
 
 
 model QuestionBank {
@@ -132,7 +130,7 @@ model TestSession {
   status     SessionStatus @default(IN_PROGRESS)
   startedAt  DateTime      @default(now())
   endedAt    DateTime?
-  score      Int?
+  score      Int?          @default(0)
   student    User          @relation(fields: [studentId], references: [id])
   test       Test          @relation(fields: [testId], references: [id])
   answers    Answer[]

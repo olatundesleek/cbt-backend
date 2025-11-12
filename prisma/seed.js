@@ -86,10 +86,13 @@ async function main() {
     create: {
       title: "Math Practice Test",
       type: "TEST",
-      isActive: true,
+      testState: "active",
       createdBy: teacher.id,
       courseId: course.id, //  use courseId
       bankId: bank.id, //  use bankId
+      passMark: 40,
+      duration: 60,
+      attemptsAllowed: 3,
     },
   });
 

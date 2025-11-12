@@ -8,6 +8,7 @@ export async function register({
   username,
   password,
   role,
+  classId,
 }) {
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) throw new Error("username exists");
@@ -19,7 +20,7 @@ export async function register({
       username,
       password: hash,
       role,
-      classId: null,
+      classId,
     },
   });
 
@@ -30,6 +31,7 @@ export async function register({
       lastname: user.lastname,
       username: user.username,
       role: user.role,
+      classId: user.classId,
     },
   };
 }

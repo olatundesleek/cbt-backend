@@ -4,6 +4,7 @@ import http from "http";
 import { Server as IOServer } from "socket.io";
 import { setIo } from "./src/utils/socket.js";
 
+// Load env file dynamically based on NODE_ENV
 if (process.env.NODE_ENV !== "production") {
   const envFile = `.env.${process.env.NODE_ENV || "development"}`;
   dotenv.config({ path: envFile });
@@ -12,14 +13,21 @@ if (process.env.NODE_ENV !== "production") {
 const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
 
-// Allowed origins for Socket.IO and Express CORS
+// =========================
+// CORS Origins
+// =========================
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://cbt.local:3000",
+  "http://0.0.0.0",
+  "http://192.168.1.117",
   "http://127.0.0.1:3000",
   "http://192.168.1.120",
   "http://192.168.1.120:3000",
   "https://escrow-rouge.vercel.app",
 ];
+
+const isProduction = process.env.NODE_ENV === "production";
 
 // =========================
 // Socket.IO Initialization
@@ -27,11 +35,14 @@ const allowedOrigins = [
 const io = new IOServer(server, {
   cors: {
     origin: (origin, callback) => {
-      // allow requests with no origin (mobile apps, curl)
-      if (!origin) return callback(null, true);
+      // ✅ Allow everything when not in production
+      if (!isProduction) {
+        return callback(null, true);
+      }
 
-      // allow listed origins or *.vercel.app
+      // ✅ In production, apply whitelist rules
       if (
+        !origin || // allow curl, mobile apps
         allowedOrigins.includes(origin) ||
         /^https:\/\/.*\.vercel\.app$/.test(origin)
       ) {
@@ -45,7 +56,7 @@ const io = new IOServer(server, {
   },
 });
 
-// Make io accessible in your app
+// Make io accessible globally
 setIo(io);
 
 // =========================
