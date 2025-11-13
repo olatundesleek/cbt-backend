@@ -63,14 +63,8 @@ export async function startSession({ studentId, testId }) {
     // Fetch student info
     const student = await prisma.user.findUnique({
       where: { id: studentId },
-      select: {
-        id: true,
-        username: true,
-        firstname: true,
-        lastname: true,
-      },
+      select: { id: true, username: true, firstname: true, lastname: true },
     });
-
     if (!student) throw new Error("Student not found");
 
     // Fetch test with course, class, and questions
@@ -81,7 +75,6 @@ export async function startSession({ studentId, testId }) {
         bank: { include: { questions: { orderBy: { id: "asc" } } } },
       },
     });
-
     if (!test) throw new Error("Test not found");
 
     const now = new Date();
@@ -105,7 +98,6 @@ export async function startSession({ studentId, testId }) {
     const attemptCount = await prisma.testSession.count({
       where: { studentId, testId, status: "COMPLETED" },
     });
-
     if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed)
       throw new Error("Maximum attempts reached for this test");
 
@@ -114,23 +106,24 @@ export async function startSession({ studentId, testId }) {
       where: { studentId, testId, status: "IN_PROGRESS", endedAt: null },
     });
 
+    // Get questions from test bank
+    const allQuestions = test.bank.questions;
+
     if (existing) {
       const answeredCount = await prisma.answer.count({
         where: { testSessionId: existing.id },
       });
 
-      const questions = test.bank.questions
+      // Add displayNumber for frontend
+      const questions = allQuestions
         .slice(0, 2)
-        .map(({ answer, ...rest }) => rest);
+        .map(({ answer, ...rest }, i) => ({ ...rest, displayNumber: i + 1 }));
 
       return {
         student,
         session: existing,
         questions,
-        progress: {
-          answeredCount,
-          total: test.bank.questions.length,
-        },
+        progress: { answeredCount, total: allQuestions.length },
       };
     }
 
@@ -184,21 +177,18 @@ export async function startSession({ studentId, testId }) {
       console.warn("Socket/timer setup failed:", err);
     }
 
-    // Return first questions (hide answers)
-    const totalQuestions = test.bank.questions.length;
-    const questions = test.bank.questions
+    // Return first questions (hide answers) with displayNumber
+    const totalQuestions = allQuestions.length;
+    const questions = allQuestions
       .slice(0, 2)
-      .map(({ answer, ...rest }) => rest);
+      .map(({ answer, ...rest }, i) => ({ ...rest, displayNumber: i + 1 }));
 
     return {
       student,
       session,
       questions,
       totalQuestions,
-      progress: {
-        answeredCount: 0,
-        total: totalQuestions,
-      },
+      progress: { answeredCount: 0, total: totalQuestions },
     };
   } catch (error) {
     console.error("Error in startSession:", error);
@@ -213,9 +203,7 @@ export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
       test: {
         include: {
           bank: {
-            include: {
-              questions: { orderBy: { id: "asc" } }, //  correct path
-            },
+            include: { questions: { orderBy: { id: "asc" } } },
           },
         },
       },
@@ -233,13 +221,16 @@ export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
   const startIndex = questionNumber - 1;
   const endIndex = Math.min(startIndex + 2, questions.length);
 
-  // Remove correct answers
+  // Slice and add displayNumber
   const nextQuestionsSlice = questions
     .slice(startIndex, endIndex)
-    .map(({ answer, ...rest }) => rest);
+    .map(({ answer, ...rest }, i) => ({
+      ...rest,
+      displayNumber: startIndex + i + 1, // 👈 NEW - visual number
+    }));
 
   // Fetch previously selected options
-  const questionIds = nextQuestionsSlice.map((q) => q.id).filter(Boolean);
+  const questionIds = nextQuestionsSlice.map((q) => q.id);
   const existingAnswers =
     questionIds.length > 0
       ? await prisma.answer.findMany({
@@ -252,7 +243,6 @@ export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
     existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
 
-  // Map questions with existing selected options
   const nextQuestions = nextQuestionsSlice.map((q) => ({
     ...q,
     selectedOption: answerMap.get(q.id) || null,
@@ -260,7 +250,6 @@ export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
 
   const showSubmitButton = endIndex >= questions.length;
 
-  // Count all previously answered questions
   const answeredCount = await prisma.answer.count({
     where: { testSessionId: sessionId },
   });
@@ -308,7 +297,6 @@ export async function submitAnswerAndGetNext({
   answers, // [{ questionId, selectedOption }, ... up to 2]
   studentId,
 }) {
-  //  Step 1: Validate session ownership and existence
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
     include: {
@@ -328,12 +316,9 @@ export async function submitAnswerAndGetNext({
 
   const questions = session.test.bank.questions;
 
-  //  Step 2: Save up to 2 answers
+  // Save up to 2 answers
   for (const a of answers) {
-    if (!a.selectedOption || a.selectedOption === 0) {
-      // If no answer is selected, just go to the next question
-      continue;
-    }
+    if (!a.selectedOption || a.selectedOption === 0) continue;
     await submitAnswerOnly({
       sessionId,
       questionId: a.questionId,
@@ -341,23 +326,13 @@ export async function submitAnswerAndGetNext({
     });
   }
 
-  //  Step 3: Determine the last submitted question index
   const lastSubmittedId = answers[answers.length - 1].questionId;
   const lastIndex = questions.findIndex((q) => q.id === lastSubmittedId);
 
-  //  Step 4: Find the next 2 questions
   const nextQuestions = questions.slice(lastIndex + 1, lastIndex + 3);
 
-  // show submit button is true if nextQuestions is empty but false if not
   const showSubmitButton = nextQuestions.length <= 1;
 
-  //  Step 5: If no remaining questions, use finishSession()
-  if (nextQuestions.length === 0) {
-    const result = await finishSession({ sessionId, studentId });
-    return { finished: true, data: result };
-  }
-
-  //  Step 6: Get any previously selected options for next 2 questions
   const questionIds = nextQuestions.map((q) => q.id);
   const existingAnswers = await prisma.answer.findMany({
     where: { testSessionId: sessionId, questionId: { in: questionIds } },
@@ -368,25 +343,26 @@ export async function submitAnswerAndGetNext({
     existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
 
-  //  Step 7: Hide correct answers
-  const publicQuestions = nextQuestions.map(({ answer, ...rest }) => ({
+  const publicQuestions = nextQuestions.map(({ answer, ...rest }, i) => ({
     ...rest,
     selectedOption: answerMap.get(rest.id) || null,
+    displayNumber: lastIndex + i + 2, // 👈 NEW - visual number
   }));
 
-  //  Step 8: Progress info
   const answeredCount = await prisma.answer.count({
     where: { testSessionId: sessionId },
   });
+
+  if (nextQuestions.length === 0) {
+    const result = await finishSession({ sessionId, studentId });
+    return { finished: true, data: result };
+  }
 
   return {
     showSubmitButton,
     finished: false,
     nextQuestions: publicQuestions,
-    progress: {
-      answeredCount,
-      total: questions.length,
-    },
+    progress: { answeredCount, total: questions.length },
   };
 }
 
@@ -417,10 +393,7 @@ export async function submitAnswerAndGetPrevious({
 
   // Save submitted answers
   for (const a of answers) {
-    if (!a.selectedOption || a.selectedOption === 0) {
-      // If no answer is selected, just go to the next question
-      continue;
-    }
+    if (!a.selectedOption || a.selectedOption === 0) continue;
     await submitAnswerOnly({
       sessionId,
       questionId: a.questionId,
@@ -432,7 +405,6 @@ export async function submitAnswerAndGetPrevious({
   const start = Math.max(firstIndex - 2, 0);
   const previousQuestions = questions.slice(start, firstIndex);
 
-  // Compute answered count once
   const answeredCount = await prisma.answer.count({
     where: { testSessionId: sessionId },
   });
@@ -446,7 +418,6 @@ export async function submitAnswerAndGetPrevious({
     };
   }
 
-  // Attach previously selected options
   const existingAnswers = await prisma.answer.findMany({
     where: {
       testSessionId: sessionId,
@@ -454,13 +425,15 @@ export async function submitAnswerAndGetPrevious({
     },
     select: { questionId: true, selectedOption: true },
   });
+
   const answerMap = new Map(
     existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
 
-  const publicQuestions = previousQuestions.map(({ answer, ...rest }) => ({
+  const publicQuestions = previousQuestions.map(({ answer, ...rest }, i) => ({
     ...rest,
     selectedOption: answerMap.get(rest.id) || null,
+    displayNumber: start + i + 1, // 👈 NEW - visual number
   }));
 
   return {
@@ -469,7 +442,6 @@ export async function submitAnswerAndGetPrevious({
     progress: { answeredCount, total: questions.length },
   };
 }
-
 export async function finishSession({ sessionId, studentId }) {
   // Fetch the session with answers and test type
   const session = await prisma.testSession.findUnique({
