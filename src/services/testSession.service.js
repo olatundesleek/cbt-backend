@@ -114,6 +114,10 @@ export async function startSession({ studentId, testId }) {
         where: { testSessionId: existing.id },
       });
 
+      const course = {
+        courseTitle: test.course.title, //
+        testTitle: test.title,
+      };
       // Add displayNumber for frontend
       const questions = allQuestions
         .slice(0, 2)
@@ -122,6 +126,7 @@ export async function startSession({ studentId, testId }) {
       return {
         student,
         session: existing,
+        course,
         questions,
         progress: { answeredCount, total: allQuestions.length },
       };
