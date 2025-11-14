@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
-
+import ExcelJS from "exceljs";
+import puppeteer from "puppeteer";
 // Helper function to check if user can view results
 function canViewResults(session, user, test) {
   // For TEST type, results are always visible after completion
@@ -504,4 +505,161 @@ export async function toggleResultRelease(testId, showResult, user) {
   });
 
   return updated;
+}
+
+export async function generatePDF(results) {
+  // Calculate overall average
+  const totalScores = [];
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      if (t.session?.score !== null && t.session?.score !== undefined) {
+        totalScores.push(t.session.score);
+      }
+    });
+  });
+  const averageScore =
+    totalScores.length > 0
+      ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
+      : "N/A";
+
+  // cbt app logo
+  const logoUrl = "https://cbt.local/logo.png"; //
+
+  const html = `
+  <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { width: 120px; height: auto; margin-bottom: 10px; }
+        h1 { margin: 0; font-size: 24px; }
+        .info { margin-bottom: 20px; text-align: center; }
+        .info p { margin: 3px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+        th { background-color: #4CAF50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tfoot td { font-weight: bold; }
+        .footer { position: fixed; bottom: 10px; width: 100%; text-align: right; font-size: 12px; color: #555; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <img src="${logoUrl}" alt="School Logo" />
+        <h1>Student Transcript</h1>
+      </div>
+
+      <div class="info">
+        <p><strong>Student:</strong> ${results.student.name}</p>
+        <p><strong>Class:</strong> ${results.student.class.className}</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Course</th>
+            <th>Test</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Started At</th>
+            <th>Ended At</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      html += `
+        <tr>
+          <td>${c.course.title}</td>
+          <td>${t.title}</td>
+          <td>${t.session?.score ?? "unreleased"}</td>
+          <td>${t.session?.status ?? "unreleased"}</td>
+          <td>${
+            t.session?.startedAt
+              ? new Date(t.session.startedAt).toLocaleString()
+              : ""
+          }</td>
+          <td>${
+            t.session?.endedAt
+              ? new Date(t.session.endedAt).toLocaleString()
+              : ""
+          }</td>
+        </tr>
+      `;
+    });
+  });
+
+  html += `
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Average Score</td>
+            <td colspan="4">${averageScore}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="footer">
+        Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+      </div>
+    </body>
+  </html>
+  `;
+
+  // Launch puppeteer
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: "networkidle0" });
+
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    printBackground: true,
+    margin: { top: "20px", bottom: "40px" },
+    displayHeaderFooter: true,
+    headerTemplate: `<div></div>`, // empty header
+    footerTemplate: `
+      <div style="width:100%; text-align:right; font-size:12px; padding-right:10px; color:#555;">
+        Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+      </div>
+    `,
+  });
+
+  await browser.close();
+  return pdfBuffer;
+}
+
+export async function generateExcel(results) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Results");
+
+  sheet.columns = [
+    { header: "Course", key: "course", width: 30 },
+    { header: "Test", key: "test", width: 30 },
+    { header: "Score", key: "score", width: 15 },
+    { header: "Status", key: "status", width: 15 },
+    { header: "Started At", key: "startedAt", width: 20 },
+    { header: "Ended At", key: "endedAt", width: 20 },
+  ];
+
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      sheet.addRow({
+        course: c.course.title,
+        test: t.title,
+        score: t.session?.score ?? "unreleased",
+        status: t.session?.status ?? "unreleased",
+        startedAt: t.session?.startedAt
+          ? new Date(t.session.startedAt).toLocaleString()
+          : "",
+        endedAt: t.session?.endedAt
+          ? new Date(t.session.endedAt).toLocaleString()
+          : "",
+      });
+    });
+  });
+
+  return workbook;
 }

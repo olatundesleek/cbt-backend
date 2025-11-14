@@ -1032,86 +1032,290 @@ Response:
 
 {
 "success": true,
-"message": "Students fetched
+"message": "Students fetched}
 
-### Results
+``
 
-#### Get Test Results (Teacher/Admin)
+### Result
 
-\`\`\`http
-GET /api/results/test/:testId
-\`\`\`
+---
 
-Response:
+## 1. Get Test Results (Teacher/Admin)
+
+Retrieve a paginated list of all session results for a specific test.
+
+**Endpoint:** `GET /api/results/test/:testId`
+
+**Access:** ADMIN, TEACHER
+
+**URL Parameters:**
+
+| Parameter | Type     | Description    |
+| :-------- | :------- | :------------- |
+| `testId`  | `Number` | ID of the test |
+
+**Query Parameters (optional):**
+
+| Parameter | Type     | Default  | Description                                  |
+| :-------- | :------- | :------- | :------------------------------------------- |
+| `page`    | `Number` | `1`      | Page number for pagination                   |
+| `limit`   | `Number` | `10`     | Number of results per page (max 100)         |
+| `sort`    | `String` | `"date"` | Field to sort by: `score`, `date`, `student` |
+| `order`   | `String` | `"desc"` | Sort order: `asc` or `desc`                  |
+
+**Response Example:**
 
 ```json
 {
   "success": true,
-  "message": "Test results fetched successfully",
+  "message": "Test results retrieved successfully",
   "data": {
     "id": 1,
     "title": "Midterm Exam",
     "course": {
+      "id": 101,
       "title": "Mathematics 101"
     },
     "sessions": [
       {
         "id": 1,
         "student": {
+          "id": 201,
           "firstname": "John",
           "lastname": "Doe"
         },
         "score": 85,
-        "status": "SUBMITTED",
+        "status": "COMPLETED",
         "startedAt": "2025-10-30T10:00:00.000Z",
         "endedAt": "2025-10-30T11:00:00.000Z"
       }
-    ]
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "totalPages": 2,
+      "totalResults": 12
+    }
   }
 }
 ```
 
-#### Get Student Results (Student)
+**Notes:**
 
-\`\`\`http
-GET /api/results/student/courses
-\`\`\`
+- Teachers can only see results for tests in courses they are assigned to.
+- Admins can see results for all tests.
 
-Response:
+---
+
+## 2. Get Single Session Result (Admin only)
+
+Retrieve details for a specific test session result.
+
+**Endpoint:** `GET /api/results/:sessionId`
+
+**Access:** ADMIN
+
+**URL Parameters:**
+
+| Parameter   | Type     | Description       |
+| :---------- | :------- | :---------------- |
+| `sessionId` | `Number` | ID of the session |
+
+**Response Example:**
 
 ```json
 {
   "success": true,
-  "message": "Course results fetched successfully",
+  "message": "Result retrieved successfully",
   "data": {
-    "course": {
-      "id": 1,
-      "title": "Mathematics 101"
+    "id": 1,
+    "test": {
+      "id": 101,
+      "title": "Midterm Exam"
     },
-    "tests": [
+    "student": {
+      "id": 201,
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "score": 85,
+    "status": "COMPLETED",
+    "startedAt": "2025-10-30T10:00:00.000Z",
+    "endedAt": "2025-10-30T11:00:00.000Z"
+  }
+}
+```
+
+---
+
+## 3. Get All Results (Admin/Teacher)
+
+Retrieve a paginated list of all test session results, with optional filtering.
+
+**Endpoint:** `GET /api/results`
+
+**Access:** ADMIN, TEACHER
+
+**Query Parameters (all optional):**
+
+| Parameter   | Type     | Description                                       |
+| :---------- | :------- | :------------------------------------------------ |
+| `testId`    | `Number` | Filter by specific test ID                        |
+| `courseId`  | `Number` | Filter by specific course ID                      |
+| `classId`   | `Number` | Filter by specific class ID                       |
+| `studentId` | `Number` | Filter by specific student ID                     |
+| `startDate` | `Date`   | ISO date string – start of range                  |
+| `endDate`   | `Date`   | ISO date string – end of range                    |
+| `page`      | `Number` | Pagination page, default: `1`                     |
+| `limit`     | `Number` | Pagination limit, default: `10`                   |
+| `sort`      | `String` | Sort field: `score`, `date`, `student`, `course`  |
+| `order`     | `String` | `asc` or `desc`                                   |
+| `search`    | `String` | Search string for student name (e.g., "John Doe") |
+
+**Response Example:**
+
+```json
+{
+  "success": true,
+  "message": "Results retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "test": {
+        "id": 101,
+        "title": "Midterm Exam"
+      },
+      "course": {
+        "id": 10,
+        "title": "Mathematics 101"
+      },
+      "student": {
+        "id": 201,
+        "firstname": "John",
+        "lastname": "Doe"
+      },
+      "score": 85,
+      "status": "COMPLETED",
+      "startedAt": "2025-10-30T10:00:00.000Z",
+      "endedAt": "2025-10-30T11:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "totalPages": 5,
+    "totalResults": 50
+  }
+}
+```
+
+---
+
+## 4. Get Student Course Results (Student)
+
+Retrieve aggregated and detailed results for a student across their courses.
+
+**Endpoint:** `GET /api/results/student/courses`
+
+**Access:** STUDENT
+
+**Query Parameters (optional):**
+
+| Parameter   | Type     | Description                                                 |
+| :---------- | :------- | :---------------------------------------------------------- |
+| `courseId`  | `Number` | Filter by specific course ID                                |
+| `startDate` | `Date`   | ISO date string – start of range                            |
+| `endDate`   | `Date`   | ISO date string – end of range                              |
+| `testType`  | `String` | Filter by test type: `TEST`, `EXAM`, `ALL` (default: `ALL`) |
+
+**Response Example:**
+
+```json
+{
+  "success": true,
+  "message": "Course results retrieved successfully",
+  "data": {
+    "student": {
+      "id": 201,
+      "name": "John Doe",
+      "class": {
+        "id": 10,
+        "className": "Grade 10A"
+      }
+    },
+    "courses": [
       {
-        "id": 1,
-        "title": "Midterm Exam",
-        "type": "EXAM",
-        "session": {
-          "score": 85,
-          "status": "SUBMITTED",
-          "startedAt": "2025-10-30T10:00:00.000Z",
-          "endedAt": "2025-10-30T11:00:00.000Z"
-        }
+        "course": {
+          "id": 101,
+          "title": "Mathematics 101",
+          "description": "Basic Math concepts"
+        },
+        "stats": {
+          "totalTests": 2,
+          "completedTests": 2,
+          "averageScore": 88
+        },
+        "tests": [
+          {
+            "id": 1,
+            "title": "Midterm Exam",
+            "type": "EXAM",
+            "session": {
+              "score": 85,
+              "status": "COMPLETED",
+              "startedAt": "2025-10-30T10:00:00.000Z",
+              "endedAt": "2025-10-30T11:00:00.000Z"
+            }
+          }
+        ]
       }
     ]
   }
 }
 ```
 
-#### Toggle Result Visibility (Admin only)
+---
 
-\`\`\`http
-PATCH /api/results/test/:testId/release
-\`\`\`
+## 5. Download Student Course Results (Student)
 
-Request body:
+Download a student's course results in PDF or Excel format.
+
+**Endpoint:** `GET /api/results/student/courses/download`
+
+**Access:** STUDENT
+
+**Query Parameters:**
+
+| Parameter   | Type     | Default | Description                      |
+| :---------- | :------- | :------ | :------------------------------- |
+| `startDate` | `Date`   | -       | ISO date string – start of range |
+| `endDate`   | `Date`   | -       | ISO date string – end of range   |
+| `format`    | `String` | `pdf`   | File format: `pdf` or `excel`    |
+
+**Response:** File download (PDF or Excel)
+
+**Notes:**
+
+- PDF is styled as a professional transcript.
+- Excel contains all tests and scores with headers for course, test, score, status, startedAt, endedAt.
+
+---
+
+## 6. Toggle Result Visibility (Admin only)
+
+Update the visibility status of a test's results.
+
+**Endpoint:** `PATCH /api/results/test/:testId/release`
+
+**Access:** ADMIN
+
+**URL Parameters:**
+
+| Parameter | Type     | Description    |
+| :-------- | :------- | :------------- |
+| `testId`  | `Number` | ID of the test |
+
+**Request Body:**
 
 ```json
 {
@@ -1119,7 +1323,7 @@ Request body:
 }
 ```
 
-Response:
+**Response Example:**
 
 ```json
 {

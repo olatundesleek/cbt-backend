@@ -78,6 +78,37 @@ export async function getStudentCourseResults(req, res, next) {
   }
 }
 
+export async function downloadStudentCourseResults(req, res) {
+  try {
+    const user = req.user;
+    const { startDate, endDate, format = "pdf" } = req.query;
+
+    // Fetch student results (all courses)
+    const results = await generateStudentResults(user, { startDate, endDate });
+
+    if (format.toLowerCase() === "excel") {
+      const workbook = await resultService.generateExcel(results);
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader("Content-Disposition", `attachment; filename=results.xlsx`);
+      await workbook.xlsx.write(res);
+      res.end();
+    } else if (format.toLowerCase() === "pdf") {
+      const pdfBuffer = await resultService.generatePDF(results);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename=results.pdf`);
+      res.send(pdfBuffer);
+    } else {
+      res.status(400).json({ error: "Invalid format. Use pdf or excel." });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate download." });
+  }
+}
+
 export async function toggleResultRelease(req, res, next) {
   try {
     const { testId } = req.params;
