@@ -1074,7 +1074,7 @@ Response:
 #### Get Student Results (Student)
 
 \`\`\`http
-GET /api/results/courses/:courseId
+GET /api/results/student/courses
 \`\`\`
 
 Response:
