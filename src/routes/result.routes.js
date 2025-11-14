@@ -38,13 +38,13 @@ router.get(
 
 // Get all results, this is for admin and teachers
 
-router.get(
-  "/",
-  authenticate,
-  authorizeRoles("ADMIN", "TEACHER"),
-  // validateQuery(getAllResultsSchema),
-  resultController.getAllResults
-);
+// router.get(
+//   "/",
+//   authenticate,
+//   authorizeRoles("ADMIN", "TEACHER"),
+//   // validateQuery(getAllResultsSchema),
+//   resultController.getAllResults
+// );
 
 // Get student's course results
 router.get(
@@ -53,6 +53,15 @@ router.get(
   authorizeRoles("STUDENT"),
   // validateQuery(getStudentCourseResultsSchema),
   resultController.getStudentCourseResults
+);
+
+// Download student's course results
+router.get(
+  "/student/courses/download",
+  authenticate,
+  authorizeRoles("STUDENT"),
+
+  resultController.downloadStudentCourseResults
 );
 
 // Toggle result visibility (admin only)

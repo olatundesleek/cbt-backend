@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
-
+import ExcelJS from "exceljs";
+import puppeteer from "puppeteer";
 // Helper function to check if user can view results
 function canViewResults(session, user, test) {
   // For TEST type, results are always visible after completion
@@ -304,618 +305,6 @@ export async function getAllResults(user, filters = {}) {
   };
 }
 
-// export async function getStudentCourseResults(user, options = {}) {
-//   if (user.role !== "STUDENT") {
-//     throw new Error("Only students can access this endpoint");
-//   }
-
-//   const {
-//     courseId, // optional: only fetch this course if provided
-//     startDate,
-//     endDate,
-//     testLimit, // optional: limit number of tests per course
-//     testType = "ALL",
-//   } = options;
-
-//   // Get student's class and enrolled courses
-//   const student = await prisma.user.findUnique({
-//     where: { id: user.id },
-//     include: {
-//       class: {
-//         include: { courses: true },
-//       },
-//     },
-//   });
-
-//   if (!student.class) {
-//     throw new Error("Student not assigned to any class");
-//   }
-
-//   // Get course IDs: either a single courseId or all courses for the class
-//   const courseIds = courseId
-//     ? [parseInt(courseId)]
-//     : student.class.courses.map((c) => c.id);
-
-//   const results = [];
-
-//   for (const cid of courseIds) {
-//     const course = await prisma.course.findUnique({
-//       where: { id: cid },
-//       include: {
-//         tests: {
-//           where: {
-//             ...(testType !== "ALL" && { type: testType }),
-//             ...(startDate && { startTime: { gte: new Date(startDate) } }),
-//             ...(endDate && { endTime: { lte: new Date(endDate) } }),
-//           },
-//           orderBy: { startTime: "desc" },
-//           take: testLimit ?? undefined, // only limit tests if testLimit is provided
-//           include: {
-//             sessions: {
-//               where: { studentId: user.id },
-//               include: { answers: { include: { question: true } } },
-//             },
-//           },
-//         },
-//       },
-//     });
-
-//     const validTests = course.tests.filter(
-//       (test) => test.sessions && test.sessions.length > 0
-//     );
-
-//     const totalTests = course.tests.length;
-//     const completedTests = validTests.length;
-
-//     const visibleTests = validTests.filter(
-//       (test) => test.showResult === true || test.type === "TEST"
-//     );
-
-//     const visibleScores = visibleTests.map((t) => t.sessions[0]?.score || 0);
-//     const averageScore =
-//       visibleScores.length > 0
-//         ? visibleScores.reduce((a, b) => a + b, 0) / visibleScores.length
-//         : 0;
-
-//     const stats = { totalTests, completedTests, averageScore };
-
-//     if (validTests.length > 0) {
-//       results.push({
-//         course: {
-//           id: course.id,
-//           title: course.title,
-//           description: course.description,
-//         },
-//         stats,
-//         tests: validTests.map((test) => {
-//           const session = test.sessions[0]; // latest session
-//           const isVisible = test.showResult === true || test.type === "TEST";
-//           const score = isVisible ? session?.score ?? null : "unreleased";
-
-//           let status = null;
-//           if (!isVisible) {
-//             status = "unreleased";
-//           } else if (session) {
-//             if (session.status === "IN_PROGRESS") {
-//               status = "IN_PROGRESS";
-//             } else if (session.status === "COMPLETED") {
-//               status = session.score >= test.passMark ? "PASSED" : "FAILED";
-//             } else {
-//               status = session.status;
-//             }
-//           }
-
-//           return {
-//             id: test.id,
-//             title: test.title,
-//             type: test.type,
-//             session: session
-//               ? {
-//                   score,
-//                   status,
-//                   startedAt: session.startedAt,
-//                   endedAt: session.endedAt,
-//                 }
-//               : null,
-//           };
-//         }),
-//       });
-//     }
-//   }
-
-//   const overallStats = {
-//     totalCourses: results.length,
-//     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
-//     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-//     averageScore:
-//       results.length > 0
-//         ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
-//           results.length
-//         : 0,
-//   };
-
-//   return {
-//     student: {
-//       id: student.id,
-//       name: `${student.firstname} ${student.lastname}`,
-//       class: {
-//         id: student.class.id,
-//         className: student.class.className,
-//       },
-//     },
-//     courses: results,
-//     overallStats,
-//   };
-// }
-
-// export async function getStudentCourseResults(user, options = {}) {
-//   if (user.role !== "STUDENT") {
-//     throw new Error("Only students can access this endpoint");
-//   }
-
-//   const {
-//     courseId,    // optional: filter by specific course
-//     startDate,   // optional: start date filter
-//     endDate,     // optional: end date filter
-//     testLimit,   // optional: limit number of tests per course
-//     testType = "ALL", // optional: test type filter
-//   } = options;
-
-//   // Fetch student with class info
-//   const student = await prisma.user.findUnique({
-//     where: { id: user.id },
-//     include: {
-//       class: {
-//         include: { courses: true },
-//       },
-//     },
-//   });
-
-//   if (!student.class) {
-//     throw new Error("Student not assigned to any class");
-//   }
-
-//   // Fetch all sessions for this student with optional filters
-//   const sessions = await prisma.testSession.findMany({
-//     where: {
-//       studentId: user.id,
-//       test: {
-//         ...(courseId && { courseId: parseInt(courseId) }),
-//         ...(testType !== "ALL" && { type: testType }),
-//         ...(startDate && { startTime: { gte: new Date(startDate) } }),
-//         ...(endDate && { endTime: { lte: new Date(endDate) } }),
-//       },
-//     },
-//     orderBy: { startedAt: "desc" },
-//     include: {
-//       test: {
-//         include: {
-//           course: true,
-//         },
-//       },
-//       answers: { include: { question: true } },
-//     },
-//   });
-
-//   // Group sessions by course
-//   const resultsByCourse: Record<number, any> = {};
-
-//   sessions.forEach((session) => {
-//     const courseId = session.test.course.id;
-//     if (!resultsByCourse[courseId]) {
-//       resultsByCourse[courseId] = {
-//         course: session.test.course,
-//         sessions: [],
-//       };
-//     }
-//     resultsByCourse[courseId].sessions.push(session);
-//   });
-
-//   // Prepare final results
-//   const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
-//     const totalTests = sessions.length;
-//     const completedTests = sessions.filter(s => s.status === "COMPLETED").length;
-
-//     const visibleScores = sessions
-//       .filter(s => s.test.showResult || s.test.type === "TEST")
-//       .map(s => s.score ?? 0);
-
-//     const averageScore =
-//       visibleScores.length > 0
-//         ? visibleScores.reduce((a, b) => a + b, 0) / visibleScores.length
-//         : 0;
-
-//     return {
-//       course: {
-//         id: course.id,
-//         title: course.title,
-//         description: course.description,
-//       },
-//       stats: { totalTests, completedTests, averageScore },
-//       tests: sessions.map((session) => {
-//         const isVisible = session.test.showResult || session.test.type === "TEST";
-//         const score = isVisible ? session.score ?? null : "unreleased";
-
-//         let status: string | null = null;
-//         if (!isVisible) {
-//           status = "unreleased";
-//         } else if (session.status === "IN_PROGRESS") {
-//           status = "IN_PROGRESS";
-//         } else if (session.status === "COMPLETED") {
-//           status = session.score! >= session.test.passMark ? "PASSED" : "FAILED";
-//         } else {
-//           status = session.status;
-//         }
-
-//         return {
-//           id: session.test.id,
-//           title: session.test.title,
-//           type: session.test.type,
-//           session: {
-//             score,
-//             status,
-//             startedAt: session.startedAt,
-//             endedAt: session.endedAt,
-//           },
-//         };
-//       }),
-//     };
-//   });
-
-//   // Compute overall stats
-//   const overallStats = {
-//     totalCourses: results.length,
-//     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
-//     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-//     averageScore:
-//       results.length > 0
-//         ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) / results.length
-//         : 0,
-//   };
-
-//   return {
-//     student: {
-//       id: student.id,
-//       name: `${student.firstname} ${student.lastname}`,
-//       class: {
-//         id: student.class.id,
-//         className: student.class.className,
-//       },
-//     },
-//     courses: results,
-//     overallStats,
-//   };
-// }
-
-// export async function getStudentCourseResults(user, options = {}) {
-//   if (user.role !== "STUDENT") {
-//     throw new Error("Only students can access this endpoint");
-//   }
-
-//   const {
-//     courseId, // optional: filter by specific course
-//     startDate, // optional: start date filter
-//     endDate, // optional: end date filter
-//     testLimit, // optional: limit number of recent tests per course
-//     testType = "ALL", // optional: test type filter
-//   } = options;
-
-//   console.log("limit is:", testLimit);
-//   // Fetch student with class info
-//   const student = await prisma.user.findUnique({
-//     where: { id: user.id },
-//     include: {
-//       class: {
-//         include: { courses: true },
-//       },
-//     },
-//   });
-
-//   if (!student.class) {
-//     throw new Error("Student not assigned to any class");
-//   }
-
-//   // Fetch all sessions for this student with optional filters
-//   const sessions = await prisma.testSession.findMany({
-//     where: {
-//       studentId: user.id,
-//       test: {
-//         ...(courseId && { courseId: parseInt(courseId) }),
-//         ...(testType !== "ALL" && { type: testType }),
-//         ...(startDate && { startTime: { gte: new Date(startDate) } }),
-//         ...(endDate && { endTime: { lte: new Date(endDate) } }),
-//       },
-//     },
-//     orderBy: { startedAt: "desc" }, // ensures most recent first
-//     include: {
-//       test: {
-//         include: {
-//           course: true,
-//         },
-//       },
-//       answers: { include: { question: true } },
-//     },
-//   });
-
-//   // Group sessions by course
-//   const resultsByCourse = {};
-
-//   sessions.forEach((session) => {
-//     const cId = session.test.course.id;
-//     if (!resultsByCourse[cId]) {
-//       resultsByCourse[cId] = {
-//         course: session.test.course,
-//         sessions: [],
-//       };
-//     }
-//     resultsByCourse[cId].sessions.push(session);
-//   });
-
-//   // Prepare final results with optional limit
-//   const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
-//     // Sort sessions by most recent
-//     const sortedSessions = sessions.sort(
-//       (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
-//     );
-
-//     // Apply testLimit only if provided
-//     const limitedSessions = testLimit
-//       ? sortedSessions.slice(0, testLimit)
-//       : sortedSessions;
-
-//     const totalTests = sessions.length; // total sessions for stats
-//     const completedTests = sessions.filter(
-//       (s) => s.status === "COMPLETED"
-//     ).length;
-
-//     const visibleScores = limitedSessions
-//       .filter((s) => s.test.showResult || s.test.type === "TEST")
-//       .map((s) => s.score || 0);
-
-//     const averageScore =
-//       visibleScores.length > 0
-//         ? visibleScores.reduce((a, b) => a + b, 0) / visibleScores.length
-//         : 0;
-
-//     return {
-//       course: {
-//         id: course.id,
-//         title: course.title,
-//         description: course.description,
-//       },
-//       stats: { totalTests, completedTests, averageScore },
-//       tests: limitedSessions.map((session) => {
-//         const isVisible =
-//           session.test.showResult || session.test.type === "TEST";
-//         const score = isVisible ? session.score || null : "unreleased";
-
-//         let status = null;
-//         if (!isVisible) status = "unreleased";
-//         else if (session.status === "IN_PROGRESS") status = "IN_PROGRESS";
-//         else if (session.status === "COMPLETED") {
-//           status = session.score >= session.test.passMark ? "PASSED" : "FAILED";
-//         } else status = session.status;
-
-//         return {
-//           id: session.test.id,
-//           title: session.test.title,
-//           type: session.test.type,
-//           session: {
-//             id: session.id,
-//             score,
-//             status,
-//             startedAt: session.startedAt,
-//             endedAt: session.endedAt,
-//           },
-//         };
-//       }),
-//     };
-//   });
-
-//   // Compute overall stats
-//   const overallStats = {
-//     totalCourses: results.length,
-//     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
-//     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-//     averageScore:
-//       results.length > 0
-//         ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
-//           results.length
-//         : 0,
-//   };
-//   console.log(results);
-//   return {
-//     student: {
-//       id: student.id,
-//       name: `${student.firstname} ${student.lastname}`,
-//       class: {
-//         id: student.class.id,
-//         className: student.class.className,
-//       },
-//     },
-//     courses: results,
-//     overallStats,
-//   };
-// }
-
-// export async function getStudentCourseResults(user, options = {}) {
-//   if (user.role !== "STUDENT") {
-//     throw new Error("Only students can access this endpoint");
-//   }
-
-//   const {
-//     courseId, // optional: filter by specific course
-//     startDate, // optional: start date filter
-//     endDate, // optional: end date filter
-//     testLimit, // optional: limit number of recent tests per course
-//     testType = "ALL", // optional: test type filter
-//   } = options;
-
-//   console.log("limit is:", testLimit);
-
-//   // === Fetch student with class info ===
-//   const student = await prisma.user.findUnique({
-//     where: { id: user.id },
-//     include: {
-//       class: {
-//         include: { courses: true },
-//       },
-//     },
-//   });
-
-//   if (!student.class) {
-//     throw new Error("Student not assigned to any class");
-//   }
-
-//   // === Fetch all sessions for this student with optional filters ===
-//   const sessions = await prisma.testSession.findMany({
-//     where: {
-//       studentId: user.id,
-//       test: {
-//         ...(courseId && { courseId: parseInt(courseId) }),
-//         ...(testType !== "ALL" && { type: testType }),
-//         ...(startDate && { startTime: { gte: new Date(startDate) } }),
-//         ...(endDate && { endTime: { lte: new Date(endDate) } }),
-//       },
-//     },
-//     orderBy: { startedAt: "desc" },
-//     include: {
-//       test: { include: { course: true } },
-//       answers: { include: { question: true } },
-//     },
-//   });
-
-//   // === Group sessions by course ===
-//   const resultsByCourse = {};
-//   sessions.forEach((session) => {
-//     const cId = session.test.course.id;
-//     if (!resultsByCourse[cId]) {
-//       resultsByCourse[cId] = {
-//         course: session.test.course,
-//         sessions: [],
-//       };
-//     }
-//     resultsByCourse[cId].sessions.push(session);
-//   });
-
-//   // === Prepare final results per course ===
-//   const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
-//     // Sort sessions by most recent
-//     const sortedSessions = sessions.sort(
-//       (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
-//     );
-
-//     // Apply testLimit if provided
-//     const limitedSessions = testLimit
-//       ? sortedSessions.slice(0, testLimit)
-//       : sortedSessions;
-
-//     const totalTests = sessions.length;
-//     const completedTests = sessions.filter(
-//       (s) => s.status?.toUpperCase() === "COMPLETED"
-//     ).length;
-
-//     // === Average score logic ===
-//     // Include all TESTs and only EXAMs where showResult = true
-//     const visibleScores = limitedSessions
-//       .filter(
-//         (s) =>
-//           s.test.type === "TEST" ||
-//           (s.test.type === "EXAM" && s.test.showResult)
-//       )
-//       .map((s) => s.score || 0);
-
-//     const averageScore =
-//       visibleScores.length > 0
-//         ? visibleScores.reduce((a, b) => a + b, 0) / visibleScores.length
-//         : 0;
-
-//     // === Build each test's display data ===
-//     const testResults = limitedSessions.map((session) => {
-//       const { type, showResult, passMark } = session.test;
-//       const testType = type?.toUpperCase();
-
-//       let score;
-//       let status;
-
-//       if (testType === "EXAM" && !showResult) {
-//         //  Exam results are hidden — mark as unreleased
-//         score = "unreleased";
-//         status = "unreleased";
-//       } else {
-//         // 🟢 Visible results (TEST or EXAM with showResult = true)
-//         score = session.score ?? null;
-
-//         if (session.status === "IN_PROGRESS") {
-//           status = "IN_PROGRESS";
-//         } else if (session.status?.toUpperCase() === "COMPLETED") {
-//           const numericScore = Number(session.score);
-//           const numericPassMark = Number(passMark);
-
-//           if (isNaN(numericScore)) {
-//             status = "ungraded";
-//           } else {
-//             status = numericScore >= numericPassMark ? "PASSED" : "FAILED";
-//           }
-//         } else {
-//           status = session.status;
-//         }
-//       }
-
-//       return {
-//         id: session.test.id,
-//         title: session.test.title,
-//         type: session.test.type,
-//         session: {
-//           id: session.id,
-//           score,
-//           status,
-//           startedAt: session.startedAt,
-//           endedAt: session.endedAt,
-//         },
-//       };
-//     });
-
-//     return {
-//       course: {
-//         id: course.id,
-//         title: course.title,
-//         description: course.description,
-//       },
-//       stats: { totalTests, completedTests, averageScore },
-//       tests: testResults,
-//     };
-//   });
-
-//   // === Compute overall stats ===
-//   const overallStats = {
-//     totalCourses: results.length,
-//     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
-//     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-//     averageScore:
-//       results.length > 0
-//         ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
-//           results.length
-//         : 0,
-//   };
-
-//   console.log(results);
-
-//   // === Final return ===
-//   return {
-//     student: {
-//       id: student.id,
-//       name: `${student.firstname} ${student.lastname}`,
-//       class: {
-//         id: student.class.id,
-//         className: student.class.className,
-//       },
-//     },
-//     courses: results,
-//     overallStats,
-//   };
-// }
-
 export async function getStudentCourseResults(user, options = {}) {
   if (user.role !== "STUDENT") {
     throw new Error("Only students can access this endpoint");
@@ -1007,7 +396,7 @@ export async function getStudentCourseResults(user, options = {}) {
         normalizedType === "EXAM" && !session.test.showResult;
       const isInProgress = session.status === "IN_PROGRESS";
 
-      // 🛑 Force unreleased if exam hidden OR test/exam in progress
+      //  Force unreleased if exam hidden OR test/exam in progress
       if (isHiddenExam || isInProgress) {
         return {
           id: session.test.id,
@@ -1023,7 +412,7 @@ export async function getStudentCourseResults(user, options = {}) {
         };
       }
 
-      // 🟢 Completed visible test/exam
+      //  Completed visible test/exam
       let score = session.score ?? null;
       let status;
 
@@ -1116,4 +505,161 @@ export async function toggleResultRelease(testId, showResult, user) {
   });
 
   return updated;
+}
+
+export async function generatePDF(results) {
+  // Calculate overall average
+  const totalScores = [];
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      if (t.session?.score !== null && t.session?.score !== undefined) {
+        totalScores.push(t.session.score);
+      }
+    });
+  });
+  const averageScore =
+    totalScores.length > 0
+      ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
+      : "N/A";
+
+  // cbt app logo
+  const logoUrl = "https://cbt.local/logo.png"; //
+
+  const html = `
+  <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { width: 120px; height: auto; margin-bottom: 10px; }
+        h1 { margin: 0; font-size: 24px; }
+        .info { margin-bottom: 20px; text-align: center; }
+        .info p { margin: 3px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+        th { background-color: #4CAF50; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        tfoot td { font-weight: bold; }
+        .footer { position: fixed; bottom: 10px; width: 100%; text-align: right; font-size: 12px; color: #555; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <img src="${logoUrl}" alt="School Logo" />
+        <h1>Student Transcript</h1>
+      </div>
+
+      <div class="info">
+        <p><strong>Student:</strong> ${results.student.name}</p>
+        <p><strong>Class:</strong> ${results.student.class.className}</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Course</th>
+            <th>Test</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Started At</th>
+            <th>Ended At</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      html += `
+        <tr>
+          <td>${c.course.title}</td>
+          <td>${t.title}</td>
+          <td>${t.session?.score ?? "unreleased"}</td>
+          <td>${t.session?.status ?? "unreleased"}</td>
+          <td>${
+            t.session?.startedAt
+              ? new Date(t.session.startedAt).toLocaleString()
+              : ""
+          }</td>
+          <td>${
+            t.session?.endedAt
+              ? new Date(t.session.endedAt).toLocaleString()
+              : ""
+          }</td>
+        </tr>
+      `;
+    });
+  });
+
+  html += `
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">Average Score</td>
+            <td colspan="4">${averageScore}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="footer">
+        Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+      </div>
+    </body>
+  </html>
+  `;
+
+  // Launch puppeteer
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: "networkidle0" });
+
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    printBackground: true,
+    margin: { top: "20px", bottom: "40px" },
+    displayHeaderFooter: true,
+    headerTemplate: `<div></div>`, // empty header
+    footerTemplate: `
+      <div style="width:100%; text-align:right; font-size:12px; padding-right:10px; color:#555;">
+        Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+      </div>
+    `,
+  });
+
+  await browser.close();
+  return pdfBuffer;
+}
+
+export async function generateExcel(results) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Results");
+
+  sheet.columns = [
+    { header: "Course", key: "course", width: 30 },
+    { header: "Test", key: "test", width: 30 },
+    { header: "Score", key: "score", width: 15 },
+    { header: "Status", key: "status", width: 15 },
+    { header: "Started At", key: "startedAt", width: 20 },
+    { header: "Ended At", key: "endedAt", width: 20 },
+  ];
+
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      sheet.addRow({
+        course: c.course.title,
+        test: t.title,
+        score: t.session?.score ?? "unreleased",
+        status: t.session?.status ?? "unreleased",
+        startedAt: t.session?.startedAt
+          ? new Date(t.session.startedAt).toLocaleString()
+          : "",
+        endedAt: t.session?.endedAt
+          ? new Date(t.session.endedAt).toLocaleString()
+          : "",
+      });
+    });
+  });
+
+  return workbook;
 }
