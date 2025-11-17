@@ -23,6 +23,7 @@ const allowedOrigins = [
   "http://192.168.1.117",
   "http://127.0.0.1:3000",
   "http://192.168.1.120",
+  "http://192.168.1.122",
   "http://192.168.1.120:3000",
   "https://escrow-rouge.vercel.app",
 ];
