@@ -182,7 +182,7 @@ export const fetchDashboardData = async (role, userId) => {
         studentCount: await prisma.user.count({
           where: { role: "STUDENT", class: { teacherId: userId } },
         }),
-        testCount: await prisma.test.count({ where: { teacherId: userId } }),
+        testCount: await prisma.test.count({ where: { createdBy: userId } }),
         courseCount: await prisma.course.count({
           where: { teacherId: userId },
         }),
