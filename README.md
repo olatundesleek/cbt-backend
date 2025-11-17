@@ -707,68 +707,6 @@ Student:
 }
 ```
 
-### Question Banks
-
-#### Create Question Bank (Teacher/Admin)
-
-\`\`\`http
-POST /api/questionBanks
-\`\`\`
-
-Request body:
-
-```json
-{
-  "questionBankName": "Mathematics Questions",
-  "description": "Basic Math Questions",
-  "courseId": 1
-}
-```
-
-Response:
-
-```json
-{
-  "success": true,
-  "message": "Question bank created successfully",
-  "data": {
-    "id": 1,
-    "questionBankName": "Mathematics Questions",
-    "description": "Basic Math Questions",
-    "courseId": 1,
-    "createdBy": 1
-  }
-}
-```
-
-#### Get Question Banks
-
-\`\`\`http
-GET /api/questionBanks
-\`\`\`
-
-Response:
-
-```json
-{
-  "success": true,
-  "message": "Question banks fetched successfully",
-  "data": [
-    {
-      "id": 1,
-      "questionBankName": "Mathematics Questions",
-      "description": "Basic Math Questions",
-      "course": {
-        "title": "Mathematics 101"
-      },
-      "_count": {
-        "questions": 50
-      }
-    }
-  ]
-}
-```
-
 ### Questions
 
 #### Create Question
