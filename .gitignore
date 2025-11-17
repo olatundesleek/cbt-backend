@@ -47,5 +47,3 @@ temp/
 tmp/
 
 # Package files
-package-lock.json
-yarn.lock
