@@ -42,3 +42,14 @@ export async function logout(req, res) {
     error(res, err.message, 400);
   }
 }
+
+export async function changeUsersPassword(req, res, next) {
+  try {
+    const { username } = req.params;
+    const { newPassword } = req.body;
+    await authService.changeUserPassword(username, newPassword);
+    return success(res, "Password changed successfully");
+  } catch (err) {
+    next(err);
+  }
+}

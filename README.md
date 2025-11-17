@@ -144,7 +144,7 @@ Request body:
 
 Response:
 
-```json
+````json
 {
   "success": true,
   "message": "Login successful",
@@ -156,6 +156,36 @@ Response:
     },
     "token": "eyJhbGciOiJIUzI1NiIs..."
   }
+}
+```
+### Admin change user password
+
+```http
+PATCH /api/students/change-user-password/:username
+````
+
+**Params**
+
+- `username` (string, required)
+
+**Body**
+
+```json
+{
+  "newPassword": "newPass123",
+  "confirmPassword": "newPass123"
+}
+```
+
+**Auth:** Required (Bearer token)  
+**Roles:** ADMIN only
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Password changed successfully"
 }
 ```
 
@@ -604,9 +634,6 @@ Accessible by users with the **TEACHER** or **ADMIN** role.
 }
 ```
 
-````
-
-
 #### Get Tests
 
 \`\`\`http
@@ -642,9 +669,9 @@ Response (Teacher):
     }
   ]
 }
-````
+```
 
-#### Get Test by ID
+### Get Test by ID
 
 \`\`\`http
 GET /api/tests/:testId
@@ -707,27 +734,217 @@ Student:
 }
 ```
 
-### Questions
+#### Question bank
 
-#### Create Question
+## Create Question Bank (Teacher/Admin)
 
-\`\`\`http
+```http
+POST /api/questionBanks
+```
+
+**Request Body**
+
+```json
+{
+  "questionBankName": "Mathematics Questions",
+  "description": "Basic Math Questions",
+  "courseId": 1
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question bank created successfully",
+  "data": {
+    "id": 1,
+    "questionBankName": "Mathematics Questions",
+    "description": "Basic Math Questions",
+    "courseId": 1,
+    "createdBy": 1
+  }
+}
+```
+
+## Get All Question Banks (Teacher/Admin)
+
+```http
+GET /api/questionBanks
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question banks fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "questionBankName": "Mathematics Questions",
+      "description": "Basic Math Questions",
+      "course": {
+        "title": "Mathematics 101"
+      },
+      "_count": {
+        "questions": 50
+      }
+    }
+  ]
+}
+```
+
+## Get Question Bank by ID
+
+```http
+GET /api/questionBanks/:bankId
+```
+
+**Params**
+
+- `bankId` (number, required)
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question bank fetched successfully",
+  "data": {
+    "id": 1,
+    "questionBankName": "Mathematics Questions",
+    "description": "Basic Math Questions",
+    "courseId": 1,
+    "createdBy": 1,
+    "questions": [
+      {
+        "id": 10,
+        "text": "What is 2 + 2?",
+        "marks": 1
+      }
+    ]
+  }
+}
+```
+
+## Update Question Bank (Teacher/Admin)
+
+```http
+PATCH /api/questionBanks/:bankId
+```
+
+**Params**
+
+- `bankId` (number, required)
+
+**Request Body**
+
+```json
+{
+  "questionBankName": "Updated Name",
+  "description": "Updated Description",
+  "courseId": 2
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question bank updated successfully",
+  "data": {
+    "id": 1,
+    "questionBankName": "Updated Name",
+    "description": "Updated Description",
+    "courseId": 2
+  }
+}
+```
+
+## Delete Question Bank (Teacher/Admin)
+
+```http
+DELETE /api/questionBanks/:bankId
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question bank deleted successfully"
+}
+```
+
+## Get Questions in a Question Bank
+
+```http
+GET /api/questionBanks/:bankId/questions
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Questions fetched successfully",
+  "data": [
+    {
+      "id": 101,
+      "text": "What is 5 × 5?",
+      "options": ["10", "20", "25", "30"],
+      "answer": "25",
+      "marks": 1
+    }
+  ]
+}
+```
+
+#### 📘 Questions
+
+## Create Question (Single or Multiple)
+
+```http
 POST /api/questions
-\`\`\`
+```
 
-Request body:
+**Request Body (Single Question)**
 
 ```json
 {
   "text": "What is 2 + 2?",
   "options": ["3", "4", "5", "6"],
-  "answer": "1",
+  "answer": "4",
   "marks": 1,
   "bankId": 1
 }
 ```
 
-Response:
+**Request Body (Multiple Questions)**
+
+```json
+[
+  {
+    "text": "What is 10 / 2?",
+    "options": ["2", "5", "10"],
+    "answer": "5",
+    "marks": 1,
+    "bankId": 1
+  },
+  {
+    "text": "What is 3 × 3?",
+    "options": ["6", "9", "12"],
+    "answer": "9",
+    "marks": 1,
+    "bankId": 1
+  }
+]
+```
+
+**Response (Single)**
 
 ```json
 {
@@ -737,24 +954,132 @@ Response:
     "id": 1,
     "text": "What is 2 + 2?",
     "options": ["3", "4", "5", "6"],
+    "answer": "4",
     "marks": 1,
     "bankId": 1
   }
 }
 ```
 
-#### Upload Questions via CSV
+**Response (Multiple)**
 
-\`\`\`http
+```json
+{
+  "success": true,
+  "message": "2 questions created successfully",
+  "data": [
+    {
+      "id": 1,
+      "text": "What is 10 / 2?",
+      "options": ["2", "5", "10"],
+      "answer": "5",
+      "marks": 1,
+      "bankId": 1
+    },
+    {
+      "id": 2,
+      "text": "What is 3 × 3?",
+      "options": ["6", "9", "12"],
+      "answer": "9",
+      "marks": 1,
+      "bankId": 1
+    }
+  ]
+}
+```
+
+---
+
+## Get Question by ID
+
+```http
+GET /api/questions/:questionId
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question fetched successfully",
+  "data": {
+    "id": 1,
+    "text": "What is 2 + 2?",
+    "options": ["3", "4", "5", "6"],
+    "answer": "4",
+    "marks": 1,
+    "bankId": 1
+  }
+}
+```
+
+---
+
+## Update Question
+
+```http
+PATCH /api/questions/:questionId
+```
+
+**Request Body**
+
+```json
+{
+  "text": "Updated question text",
+  "options": ["Option A", "Option B"],
+  "answer": "Option A",
+  "marks": 2
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question updated successfully",
+  "data": {
+    "id": 1,
+    "text": "Updated question text",
+    "options": ["Option A", "Option B"],
+    "answer": "Option A",
+    "marks": 2
+  }
+}
+```
+
+---
+
+## Delete Question
+
+```http
+DELETE /api/questions/:questionId
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Question deleted successfully"
+}
+```
+
+---
+
+## Upload Questions via CSV
+
+```http
 POST /api/questions/upload
-\`\`\`
+```
 
-Request body (multipart/form-data):
+**Form Data**
+| Field | Type | Description |
+|-------|--------|-------------|
+| questions | file (CSV) | CSV file containing questions |
+| bankId | number | ID of the question bank |
 
-- questions: CSV file
-- bankId: number
-
-Response:
+**Response**
 
 ```json
 {
@@ -765,21 +1090,28 @@ Response:
       "id": 1,
       "text": "What is 2 + 2?",
       "options": ["3", "4", "5", "6"],
+      "answer": "4",
       "marks": 1
     }
   ]
 }
 ```
 
-#### Get Upload Template
+---
 
-\`\`\`http
+## Download CSV Upload Template
+
+```http
 GET /api/questions/upload/template
-\`\`\`
+```
 
-Response:
+**Response**
 
-- CSV file download with headers: text, options, answer, marks
+- Downloads a CSV with headers:
+
+```
+text,options,answer,marks
+```
 
 ### Test Sessions
 
@@ -865,114 +1197,203 @@ Response:
 
 #### Profile
 
-Get Profile
+# 📘 Profile API
 
-Fetch the authenticated user's profile information.
-
-Roles: Authenticated users
+## Get Logged-in User Profile
 
 ```http
 GET /api/profile
 ```
 
-Response:
+**Auth:** Required (Bearer token)
 
+**Response**
+
+```json
 {
-"success": true,
-"message": "Profile fetched successfully",
-"data": {
-"id": 1,
-"firstname": "John",
-"lastname": "Doe",
-"username": "johndoe",
-"role": "STUDENT",
-"class": {
-"id": 1,
-"className": "Class 1A"
+  "success": true,
+  "message": "Profile fetched successfully",
+  "data": {
+    "id": "65f1...",
+    "firstname": "John",
+    "lastname": "Doe",
+    "username": "johnny",
+    "email": "john@example.com",
+    "role": "student"
+  }
 }
-}
-}
+```
 
-#### Update Profile
-
-Update profile details such as first name, last name, or username.
-
-Roles: Authenticated users
-
-Validation: At least one field must be provided (firstname, lastname, or username)
+## Update Profile
 
 ```http
 PATCH /api/profile
 ```
 
-Request Body:
+**Auth:** Required (Bearer token)
 
+**Request Body** (at least one field required)
+
+```json
 {
-"firstname": "Jane",
-"lastname": "Doe",
-"username": "janedoe"
+  "firstname": "Olatunde",
+  "lastname": "Sleek",
+  "username": "sleek01"
 }
+```
 
-Response:
+**Response**
 
+```json
 {
-"success": true,
-"message": "Profile updated successfully",
-"data": {
-"id": 1,
-"firstname": "Jane",
-"lastname": "Doe",
-"username": "janedoe",
-"role": "STUDENT"
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "firstname": "Olatunde",
+    "lastname": "Sleek",
+    "username": "sleek01"
+  }
 }
-}
+```
 
-#### Update Password
-
-Update the authenticated user's password.
-
-Roles: Authenticated users
-
-Validation: confirmPassword must match newPassword
+## Update Password
 
 ```http
 PATCH /api/profile/password
 ```
 
-Request Body:
+**Auth:** Required (Bearer token)
 
+**Request Body**
+
+```json
 {
-"currentPassword": "oldpassword123",
-"newPassword": "newpassword123",
-"confirmPassword": "newpassword123"
+  "currentPassword": "oldPass123",
+  "newPassword": "newPass456",
+  "confirmPassword": "newPass456"
 }
+```
 
-Response:
+**Response**
 
+```json
 {
-"success": true,
-"message": "Password updated successfully"
+  "success": true,
+  "message": "Password updated successfully"
 }
+```
 
 #### Students
 
-List Students
+# 📘 Students API
 
-Retrieve a list of students.
-
-Roles: ADMIN → all students, TEACHER → students in teacher's classes
+## List Students
 
 ```http
 GET /api/students
 ```
 
-Response:
+**Auth:** Required (Bearer token)  
+**Roles:** ADMIN → all students, TEACHER → students in teacher's classes
 
+**Response**
+
+```json
 {
-"success": true,
-"message": "Students fetched}
+  "success": true,
+  "message": "Students fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "firstname": "Olatunde",
+      "lastname": "Sleek",
+      "username": "sleek01",
+      "email": "olatunde@example.com",
+      "class": {
+        "id": 101,
+        "name": "JSS1"
+      }
+    }
+  ]
+}
+```
 
-``
+---
+
+## Get Single Student by Username
+
+```http
+GET /api/students/:username
+```
+
+**Params**
+
+- `username` (string, required)
+
+**Auth:** Required (Bearer token)  
+**Roles:** ADMIN, TEACHER (if student in their class), or the student themself
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Student fetched successfully",
+  "data": {
+    "id": 1,
+    "firstname": "Olatunde",
+    "lastname": "Sleek",
+    "username": "sleek01",
+    "email": "olatunde@example.com",
+    "class": {
+      "id": 101,
+      "name": "JSS1"
+    }
+  }
+}
+```
+
+---
+
+## Assign Student to Class
+
+```http
+POST /api/students/:studentId/assign-class
+```
+
+**Params**
+
+- `studentId` (number, required)
+
+**Body**
+
+```json
+{
+  "classId": 101
+}
+```
+
+**Auth:** Required (Bearer token)  
+**Roles:** ADMIN only
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Student assigned to class",
+  "data": {
+    "id": 1,
+    "firstname": "Olatunde",
+    "lastname": "Sleek",
+    "username": "sleek01",
+    "class": {
+      "id": 101,
+      "name": "JSS1"
+    }
+  }
+}
+```
 
 ### Result
 

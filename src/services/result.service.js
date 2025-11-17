@@ -317,8 +317,19 @@ export async function getStudentCourseResults(user, options = {}) {
   // === Fetch student with class info ===
   const student = await prisma.user.findUnique({
     where: { id: user.id },
-    include: {
-      class: { include: { courses: true } },
+    select: {
+      id: true,
+      firstname: true,
+      lastname: true,
+      username: true,
+      // role: true,
+      class: {
+        select: {
+          id: true,
+
+          courses: true,
+        },
+      },
     },
   });
 
@@ -525,7 +536,7 @@ export async function generatePDF(results) {
   // cbt app logo
   const logoUrl = "https://cbt.local/logo.png"; //
 
-  const html = `
+  let html = `
   <html>
     <head>
       <style>

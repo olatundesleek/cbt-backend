@@ -91,17 +91,3 @@ export const assignStudentToClass = async (studentId, classId, requester) => {
     throw error;
   }
 };
-
-export const changeUserPassword = async (username, newPassword) => {
-  try {
-    const user = await prisma.user.findUnique({ where: { username } });
-    if (!user) throw new Error("User not found");
-    await prisma.user.update({
-      where: { username },
-      data: { password: newPassword },
-    });
-  } catch (error) {
-    console.error("Error changing user password:", error);
-    throw error;
-  }
-};
