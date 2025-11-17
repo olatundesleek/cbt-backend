@@ -11,3 +11,11 @@ export const loginSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
 });
+
+export const updateUsersPasswordSchema = Joi.object({
+  newPassword: Joi.string().min(6).required(),
+  confirmPassword: Joi.string()
+    .valid(Joi.ref("newPassword"))
+    .required()
+    .messages({ "any.only": "Passwords must match" }),
+});

@@ -3,7 +3,6 @@ import * as studentController from "../controllers/student.controller.js";
 import {
   assignClassSchema,
   getStudentSchema,
-  updateStudentPasswordSchema,
   assignStudentSchema,
 } from "../validators/student.validator.js";
 import {
@@ -39,15 +38,6 @@ router.post(
   authenticate,
   authorizeRoles("ADMIN"),
   studentController.assignClassToStudent
-);
-
-// route for admin to change a user's password
-router.patch(
-  "change-user-password/:username",
-  authenticate,
-  validateBody(updateStudentPasswordSchema),
-  authorizeRoles("ADMIN"),
-  studentController.changeUserPassword
 );
 
 export default router;

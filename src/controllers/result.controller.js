@@ -81,31 +81,40 @@ export async function getStudentCourseResults(req, res, next) {
 export async function downloadStudentCourseResults(req, res) {
   try {
     const user = req.user;
-    const { startDate, endDate, format = "pdf" } = req.query;
 
-    // Fetch student results (all courses)
-    const results = await generateStudentResults(user, { startDate, endDate });
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
 
-    if (format.toLowerCase() === "excel") {
+    let format = req.query.format; // DO NOT destructure this, left it like this on purpose, no do oversabi
+    format = format ? format.toString().toLowerCase() : "pdf";
+
+    const results = await resultService.getStudentCourseResults(user, {
+      startDate,
+      endDate,
+    });
+
+    if (format === "excel") {
       const workbook = await resultService.generateExcel(results);
       res.setHeader(
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       );
-      res.setHeader("Content-Disposition", `attachment; filename=results.xlsx`);
+      res.setHeader("Content-Disposition", "attachment; filename=results.xlsx");
       await workbook.xlsx.write(res);
-      res.end();
-    } else if (format.toLowerCase() === "pdf") {
+      return res.end();
+    }
+
+    if (format === "pdf") {
       const pdfBuffer = await resultService.generatePDF(results);
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=results.pdf`);
-      res.send(pdfBuffer);
-    } else {
-      res.status(400).json({ error: "Invalid format. Use pdf or excel." });
+      res.setHeader("Content-Disposition", "attachment; filename=results.pdf");
+      return res.send(pdfBuffer);
     }
+
+    return res.status(400).json({ error: "Invalid format. Use pdf or excel." });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to generate download." });
+    return res.status(500).json({ error: "Failed to generate download." });
   }
 }
 

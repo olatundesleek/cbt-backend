@@ -12,9 +12,9 @@ export async function authenticate(req, res, next) {
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
     if (!user) return res.status(401).send("User not found");
     req.user = user;
+
     next();
   } catch (e) {
-    console.log("Token from cookie:", req.cookies.reqtoken);
     return res.status(401).send("Invalid token");
   }
 }
