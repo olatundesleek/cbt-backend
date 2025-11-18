@@ -8,6 +8,8 @@ import { setIo } from "./src/utils/socket.js";
 if (process.env.NODE_ENV !== "production") {
   const envFile = `.env.${process.env.NODE_ENV || "development"}`;
   dotenv.config({ path: envFile });
+  console.log("ENV:", envFile);
+  console.log("ENV:", process.env.NODE_ENV);
 }
 
 const PORT = process.env.PORT || 4000;
@@ -29,6 +31,7 @@ const allowedOrigins = [
 ];
 
 const isProduction = process.env.NODE_ENV === "production";
+console.log(isProduction);
 
 // =========================
 // Socket.IO Initialization
