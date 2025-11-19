@@ -175,3 +175,28 @@ enum NotificationType {
   COURSE    // A specific course
 }
 
+model SystemSettings {
+  id               Int      @id @default(autoincrement())
+  appName          String
+  institutionName  String
+  shortName        String?     // FCC CBT
+
+  logoUrl          String?     // uploaded logo path
+  faviconUrl       String?     // uploaded favicon path
+
+  primaryColor     String?     // hex or rgb e.g.
+
+  supportEmail     String?
+
+  systemStatus     SystemStatus @default(ACTIVE)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+enum SystemStatus {
+  ACTIVE
+  MAINTENANCE
+}
+
+
