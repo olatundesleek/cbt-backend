@@ -1696,6 +1696,42 @@ Update the visibility status of a test's results.
 }
 ```
 
+# System Settings API Documentation
+
+This API allows administrators to retrieve and update system settings for the CBT platform. It supports file uploads (logo & favicon) and saves them to Cloudinary.
+
+---
+
+## Base URL
+
+`/api/system-settings`
+
+---
+
+# 🔹 GET — Fetch System Settings
+
+**Endpoint:**  
+`GET /api/system-settings`
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "system settings fetched successfully",
+  "data": {
+    "appName": "CBT Portal",
+    "institutionName": "Florintech Computer College",
+    "shortName": "FCC",
+    "primaryColor": "#0000ff",
+    "supportEmail": "support@florintech.com",
+    "systemStatus": "ACTIVE",
+    "logoUrl": "https://res.cloudinary.com/.../cbt/logo.png",
+    "faviconUrl": "https://res.cloudinary.com/.../cbt/favicon.png"
+  }
+}
+```
+
 ## Error Handling
 
 The API uses consistent error responses:
