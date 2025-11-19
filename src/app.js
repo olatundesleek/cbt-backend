@@ -14,6 +14,7 @@ import studentRoutes from "./routes/student.routes.js";
 import teacherRoutes from "./routes/teacher.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import systemSettingsRoutes from "./routes/systemSettings.routes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -71,6 +72,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/teachers", teacherRoutes);
+app.use("/api/notification", notificationRoutes);
 app.use("/api/system-settings", systemSettingsRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
