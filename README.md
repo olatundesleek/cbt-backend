@@ -144,7 +144,7 @@ Request body:
 
 Response:
 
-````json
+```json
 {
   "success": true,
   "message": "Login successful",
@@ -158,11 +158,11 @@ Response:
   }
 }
 ```
+
 ### Admin change user password
 
-```http
-PATCH /api/students/change-user-password/:username
-````
+http
+PATCH /api/auth/change-user-password/:username
 
 **Params**
 
@@ -177,7 +177,7 @@ PATCH /api/students/change-user-password/:username
 }
 ```
 
-**Auth:** Required (Bearer token)  
+**Auth:** Required (Bearer token)
 **Roles:** ADMIN only
 
 **Response**
@@ -1693,6 +1693,187 @@ Update the visibility status of a test's results.
     "title": "Midterm Exam",
     "showResult": true
   }
+}
+```
+
+````markdown
+# Notification API
+
+Manage notifications in the CBT system. Notifications can be targeted to general users, teachers, students, specific classes, or specific courses.
+
+---
+
+## Create Notification
+
+**Endpoint:** `POST /api/notifications`  
+**Access:** Admin only
+
+**Request Body (JSON or Form-Data):**
+
+```json
+{
+  "title": "Exam Reminder",
+  "message": "Your Math exam is tomorrow at 9 AM.",
+  "type": "CLASS",
+  "classId": 3
+}
+```
+````
+
+**Notes:**
+
+- If type is `CLASS`, `classId` is required.
+- If type is `COURSE`, `courseId` is required.
+- For `GENERAL`, `STUDENT`, `TEACHER` types, neither `classId` nor `courseId` is required.
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "message": "Notification created successfully",
+  "data": {
+    "id": 1,
+    "title": "Exam Reminder",
+    "message": "Your Math exam is tomorrow at 9 AM.",
+    "type": "CLASS",
+    "classId": 3,
+    "courseId": null,
+    "createdById": 1,
+    "createdAt": "2025-11-19T10:00:00.000Z"
+  }
+}
+```
+
+**Error Response Example:**
+
+```json
+{
+  "success": false,
+  "message": "Validation error",
+  "details": "\"classId\" is required when type is CLASS",
+  "status": 400
+}
+```
+
+---
+
+## Update Notification
+
+**Endpoint:** `PATCH /api/notifications/:notificationId`  
+**Access:** Admin only
+
+**Request Body (JSON):**
+
+```json
+{
+  "title": "Updated Exam Reminder",
+  "message": "Your Math exam is tomorrow at 10 AM."
+}
+```
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "message": "Notification updated successfully",
+  "data": {
+    "id": 1,
+    "title": "Updated Exam Reminder",
+    "message": "Your Math exam is tomorrow at 10 AM.",
+    "type": "CLASS",
+    "classId": 3,
+    "courseId": null,
+    "createdById": 1,
+    "createdAt": "2025-11-19T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+## Delete Notification
+
+**Endpoint:** `DELETE /api/notifications/:notificationId`  
+**Access:** Admin only
+
+**Response (Success):**
+
+```json
+{
+  "success": true,
+  "message": "Notification deleted successfully",
+  "data": null
+}
+```
+
+---
+
+## Get Notifications for Logged-in User
+
+**Endpoint:** `GET /api/notifications`  
+**Access:** Any authenticated user
+
+**Response Example (Admin sees all):**
+
+```json
+{
+  "success": true,
+  "message": "Notifications fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "title": "Exam Reminder",
+      "message": "Your Math exam is tomorrow at 10 AM.",
+      "type": "GENERAL",
+      "classId": null,
+      "courseId": null,
+      "createdById": 1,
+      "createdAt": "2025-11-19T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "title": "Staff Meeting",
+      "message": "Teacher meeting at 2 PM.",
+      "type": "TEACHER",
+      "classId": null,
+      "courseId": null,
+      "createdById": 1,
+      "createdAt": "2025-11-19T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Response Example (Student sees relevant notifications only):**
+
+```json
+{
+  "success": true,
+  "message": "Notifications fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "title": "Exam Reminder",
+      "message": "Your Math exam is tomorrow at 10 AM.",
+      "type": "GENERAL",
+      "classId": null,
+      "courseId": null,
+      "createdById": 1,
+      "createdAt": "2025-11-19T10:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "title": "Class Activity",
+      "message": "Your class 3 has a new activity.",
+      "type": "CLASS",
+      "classId": 3,
+      "courseId": null,
+      "createdById": 1,
+      "createdAt": "2025-11-19T12:00:00.000Z"
+    }
+  ]
 }
 ```
 
