@@ -162,7 +162,7 @@ Response:
 ### Admin change user password
 
 http
-PATCH /api/auth/change-user-password/:username
+PATCH /api/auth/change-user-password/:userId
 
 **Params**
 
@@ -186,6 +186,27 @@ PATCH /api/auth/change-user-password/:username
 {
   "success": true,
   "message": "Password changed successfully"
+}
+```
+
+### Admin delete user
+
+http
+DELETE /api/auth/delete-user/:userid
+
+**Params**
+
+- `userid` (number, required)
+
+**Auth:** Required (Bearer token)
+**Roles:** ADMIN only
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "User Seyi West deleted successfully"
 }
 ```
 

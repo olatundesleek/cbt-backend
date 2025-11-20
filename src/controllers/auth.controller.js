@@ -45,10 +45,31 @@ export async function logout(req, res) {
 
 export async function changeUsersPassword(req, res, next) {
   try {
-    const { username } = req.params;
+    const { userId } = req.params;
     const { newPassword } = req.body;
-    await authService.changeUserPassword(username, newPassword);
-    return success(res, "Password changed successfully");
+
+    const data = await authService.changeUserPassword(userId, newPassword);
+    return success(
+      res,
+      `${data.user.username} Password changed successfully`,
+      data
+    );
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteUser(req, res, next) {
+  try {
+    const { userId } = req.params;
+    const currentUser = req.user.id;
+
+    const data = await authService.deleteUser(currentUser, userId);
+    return success(
+      res,
+      `user ${data.user.username} deleted successfully`,
+      data
+    );
   } catch (err) {
     next(err);
   }
