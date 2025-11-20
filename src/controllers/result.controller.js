@@ -27,35 +27,30 @@ export async function getTestResults(req, res, next) {
   }
 }
 
+// get all results endpoint for admin / teachers
 export async function getAllResults(req, res, next) {
   try {
-    const {
-      testId,
-      courseId,
-      classId,
-      studentId,
-      startDate,
-      endDate,
-      page,
-      limit,
-      sort,
-      order,
-      search,
-    } = req.query;
+    const filters = {
+      page: parseInt(req.query.page, 10) || 1,
+      limit: parseInt(req.query.limit, 10) || 10,
+      testId: req.query.testId ? parseInt(req.query.testId, 10) : undefined,
+      courseId: req.query.courseId
+        ? parseInt(req.query.courseId, 10)
+        : undefined,
+      classId: req.query.classId ? parseInt(req.query.classId, 10) : undefined,
+      studentId: req.query.studentId
+        ? parseInt(req.query.studentId, 10)
+        : undefined,
+      testType: req.query.testType?.toUpperCase(), // "TEST", "EXAM", or "ALL"
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      search: req.query.search,
+      sort: req.query.sort,
+      order: req.query.order,
+    };
 
-    const results = await resultService.getAllResults(req.user, {
-      testId,
-      courseId,
-      classId,
-      studentId,
-      startDate,
-      endDate,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort,
-      order,
-      search,
-    });
+    const results = await resultService.getAllResults(req.user, filters);
+
     return success(res, "Results retrieved successfully", results);
   } catch (err) {
     next(err);
@@ -109,6 +104,46 @@ export async function downloadStudentCourseResults(req, res) {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", "attachment; filename=results.pdf");
       return res.send(pdfBuffer);
+    }
+
+    return res.status(400).json({ error: "Invalid format. Use pdf or excel." });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to generate download." });
+  }
+}
+
+export async function downloadResults(req, res) {
+  try {
+    const user = req.user;
+
+    const filters = { ...req.query };
+
+    let format = req.query.format;
+    format = format ? format.toString().toLowerCase() : "pdf";
+
+    if (format === "pdf") {
+      const pdfBuffer = await resultService.generateAllResultsPdf(
+        user,
+        filters
+      );
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=results.pdf");
+      return res.send(pdfBuffer);
+    }
+
+    if (format === "excel") {
+      const workbook = await resultService.generateAllResultsExcel(
+        user,
+        filters
+      );
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader("Content-Disposition", "attachment; filename=results.xlsx");
+      await workbook.xlsx.write(res);
+      return res.end();
     }
 
     return res.status(400).json({ error: "Invalid format. Use pdf or excel." });

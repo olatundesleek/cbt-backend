@@ -36,14 +36,3 @@ export async function assignClassToStudent(req, res, next) {
     next(err);
   }
 }
-
-export async function changeUserPassword(req, res, next) {
-  try {
-    const { username } = req.params;
-    const { newPassword } = req.body;
-    await studentService.changeUserPassword(username, newPassword);
-    return success(res, "Password changed successfully");
-  } catch (err) {
-    next(err);
-  }
-}

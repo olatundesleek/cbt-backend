@@ -2,17 +2,32 @@ import prisma from "../config/prisma.js";
 
 export const getStudents = async (user) => {
   if (user.role === "ADMIN") {
+    // Return all students with their class and courses
     return prisma.user.findMany({
       where: { role: "STUDENT" },
-      include: { class: true, courses: true },
+      select: {
+        firstname: true,
+        lastname: true,
+        username: true,
+        class: true,
+        courses: true,
+      },
     });
   }
 
   if (user.role === "TEACHER") {
-    // students whose class has teacherId === user.id
+    // Return students in classes taught by the teacher
     return prisma.user.findMany({
-      where: { role: "STUDENT", class: { teacherId: user.id } },
-      include: { class: true },
+      where: {
+        role: "STUDENT",
+        class: { teacherId: user.id },
+      },
+      select: {
+        firstname: true,
+        lastname: true,
+        username: true,
+        class: true,
+      },
     });
   }
 

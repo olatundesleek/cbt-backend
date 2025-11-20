@@ -569,14 +569,12 @@ Response:
 
 ### Tests
 
-Perfect! I can format your **Create Test endpoint** in the same style as your Teachers and Results sections so it’s ready to paste directly into your README. Here’s the full Markdown:
-
-````markdown
 #### Create Test
 
 ```http
 POST /api/tests
 ```
+
 ````
 
 Create a new test.
@@ -1314,7 +1312,7 @@ PATCH /api/profile/password
 GET /api/students
 ```
 
-**Auth:** Required (Bearer token)  
+**Auth:** Required (Bearer token)
 **Roles:** ADMIN → all students, TEACHER → students in teacher's classes
 
 **Response**
@@ -1351,7 +1349,7 @@ GET /api/students/:username
 
 - `username` (string, required)
 
-**Auth:** Required (Bearer token)  
+**Auth:** Required (Bearer token)
 **Roles:** ADMIN, TEACHER (if student in their class), or the student themself
 
 **Response**
@@ -1394,7 +1392,7 @@ POST /api/students/:studentId/assign-class
 }
 ```
 
-**Auth:** Required (Bearer token)  
+**Auth:** Required (Bearer token)
 **Roles:** ADMIN only
 
 **Response**
@@ -1414,7 +1412,7 @@ POST /api/students/:studentId/assign-class
     }
   }
 }
-```
+````
 
 ### Result
 
@@ -1491,7 +1489,7 @@ Retrieve a paginated list of all session results for a specific test.
 
 Retrieve details for a specific test session result.
 
-**Endpoint:** `GET /api/results/:sessionId`
+**Endpoint:** `GET /api/results/test/:sessionId`
 
 **Access:** ADMIN
 
@@ -1528,66 +1526,175 @@ Retrieve details for a specific test session result.
 
 ---
 
-## 3. Get All Results (Admin/Teacher)
+# 📘 GET /results — Admin & Teacher Results API Documentation
 
-Retrieve a paginated list of all test session results, with optional filtering.
+Retrieve filtered, searchable, paginated student test results.
 
-**Endpoint:** `GET /api/results`
+---
 
-**Access:** ADMIN, TEACHER
+## Authorization
 
-**Query Parameters (all optional):**
+| Role        | Access                                                                   |
+| :---------- | :----------------------------------------------------------------------- |
+| **ADMIN**   | Full access                                                              |
+| **TEACHER** | Restricted to only results for tests belonging to their assigned courses |
 
-| Parameter   | Type     | Description                                       |
-| :---------- | :------- | :------------------------------------------------ |
-| `testId`    | `Number` | Filter by specific test ID                        |
-| `courseId`  | `Number` | Filter by specific course ID                      |
-| `classId`   | `Number` | Filter by specific class ID                       |
-| `studentId` | `Number` | Filter by specific student ID                     |
-| `startDate` | `Date`   | ISO date string – start of range                  |
-| `endDate`   | `Date`   | ISO date string – end of range                    |
-| `page`      | `Number` | Pagination page, default: `1`                     |
-| `limit`     | `Number` | Pagination limit, default: `10`                   |
-| `sort`      | `String` | Sort field: `score`, `date`, `student`, `course`  |
-| `order`     | `String` | `asc` or `desc`                                   |
-| `search`    | `String` | Search string for student name (e.g., "John Doe") |
+**Authentication:** Bearer Token
 
-**Response Example:**
+**Header example:**
+
+`Authorization: Bearer <token>`
+
+## Query Parameters
+
+### Filtering
+
+| Parameter   | Type           | Description                               |
+| :---------- | :------------- | :---------------------------------------- |
+| `testId`    | `number`       | Filter by specific test ID                |
+| `courseId`  | `number`       | Filter by course                          |
+| `classId`   | `number`       | Filter by class                           |
+| `studentId` | `number`       | Filter a single student                   |
+| `testType`  | `string`       | Filter by test type: `Exam`, `Test`,      |
+| `startDate` | `string (ISO)` | Start of date range                       |
+| `endDate`   | `string (ISO)` | End of date range (must be ≥ `startDate`) |
+| `search`    | `string`       | Search student firstname or lastname      |
+
+### 📄 Pagination
+
+| Parameter | Type     | Default |
+| :-------- | :------- | :------ |
+| `page`    | `number` | `1`     |
+| `limit`   | `number` | `10`    |
+
+### 📊 Sorting
+
+| Parameter | Type     | Allowed                              | Default |
+| :-------- | :------- | :----------------------------------- | :------ |
+| `sort`    | `string` | `score`, `date`, `student`, `course` | `date`  |
+| `order`   | `string` | `asc`, `desc`                        | `desc`  |
+
+---
+
+## Sample Request
+
+`GET /results?classId=3&courseId=2&testType=Exam&search=john&sort=score&order=desc&page=1&limit=10`
+
+---
+
+## Sample Successful Response
 
 ```json
 {
   "success": true,
   "message": "Results retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "test": {
-        "id": 101,
-        "title": "Midterm Exam"
-      },
-      "course": {
-        "id": 10,
-        "title": "Mathematics 101"
-      },
-      "student": {
-        "id": 201,
-        "firstname": "John",
-        "lastname": "Doe"
-      },
-      "score": 85,
-      "status": "COMPLETED",
-      "startedAt": "2025-10-30T10:00:00.000Z",
-      "endedAt": "2025-10-30T11:00:00.000Z"
+  "data": {
+    "sessions": [
+      {
+        "id": 1021,
+        "score": 85,
+        "total": 100,
+        "percentage": 85,
+        "endedAt": "2025-10-25T10:20:00.000Z",
+        "testId": 8,
+        "studentId": 55,
+        "test": {
+          "id": 8,
+          "type": "Exam",
+          "courseId": 2,
+          "course": {
+            "id": 2,
+            "title": "Physics"
+          }
+        },
+        "student": {
+          "id": 55,
+          "firstname": "John",
+          "lastname": "Doe",
+          "class": {
+            "id": 3,
+            "name": "SS2A"
+          }
+        }
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 42,
+      "pages": 5
     }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "totalPages": 5,
-    "totalResults": 50
   }
 }
 ```
+
+# Download Results API Documentation
+
+## `GET /api/results/download`
+
+This endpoint allows users to download student test results in PDF or Excel format, applying the same filters used for the main results table.
+
+---
+
+## Query Parameters
+
+The download endpoint supports all filtering, sorting, and pagination parameters available on the main results API (`GET /results`).
+
+| Parameter   | Type     | Description                                                                     |
+| :---------- | :------- | :------------------------------------------------------------------------------ |
+| `format`    | `string` | **File type to download.** Allowed values: `pdf` or `excel`. **Default: `pdf`** |
+| `courseId`  | `number` | Filter by specific course ID.                                                   |
+| `studentId` | `number` | Filter by specific student ID.                                                  |
+| `testType`  | `string` | Filter by test type (e.g., `Exam`, `Test`, `Quiz`, `Assignment`).               |
+| `startDate` | `date`   | Filter tests starting from this date (ISO format).                              |
+| `endDate`   | `date`   | Filter tests ending before this date (ISO format).                              |
+| `page`      | `number` | Pagination page number.                                                         |
+| `limit`     | `number` | Number of results per page.                                                     |
+| `sort`      | `string` | Sort field: `date`, `score`, `student`, `course`.                               |
+| `order`     | `string` | Sort order: `asc` or `desc`.                                                    |
+| `search`    | `string` | Search by student first or last name.                                           |
+
+---
+
+## Headers
+
+Authentication is required using a Bearer Token.
+
+| Header          | Example          |
+| :-------------- | :--------------- |
+| `Authorization` | `Bearer <token>` |
+
+---
+
+## Response
+
+The response is a downloadable file stream, typically handled by the browser.
+
+| Format    | Content Type                                                        | Description                                                                   |
+| :-------- | :------------------------------------------------------------------ | :---------------------------------------------------------------------------- |
+| **PDF**   | `application/pdf`                                                   | Returns a downloadable PDF file containing the results table.                 |
+| **Excel** | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | Returns a downloadable Excel workbook (`.xlsx`) containing the results table. |
+
+### Downloaded Table Columns
+
+The generated file includes the following data columns:
+
+| Column         | Description                                                       |
+| :------------- | :---------------------------------------------------------------- |
+| **Student**    | Student full name.                                                |
+| **Class**      | Class name the student belongs to.                                |
+| **Course**     | Course title for the test.                                        |
+| **Test**       | Test title.                                                       |
+| **Score**      | Test score (e.g., `85/100`) or "Unreleased" if scores are hidden. |
+| **Status**     | Test status (`PASSED`, `FAILED`, `IN_PROGRESS`) or "Unreleased".  |
+| **Started At** | Test start timestamp.                                             |
+| **Ended At**   | Test end timestamp.                                               |
+
+---
+
+## ⚡ Usage Examples
+
+### Download PDF
 
 ---
 
