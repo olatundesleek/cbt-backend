@@ -19,3 +19,7 @@ export const updateUsersPasswordSchema = Joi.object({
     .required()
     .messages({ "any.only": "Passwords must match" }),
 });
+
+export const deleteUserSchema = Joi.object({
+  userId: Joi.number().min(1).required(),
+});

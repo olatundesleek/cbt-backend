@@ -19,7 +19,7 @@ const router = express.Router();
 
 // Get single session result, this is for admin use only
 router.get(
-  "/:sessionId",
+  "/test:sessionId",
   authenticate,
   authorizeRoles("ADMIN"),
   validateParams(getSessionResultSchema),
@@ -38,13 +38,22 @@ router.get(
 
 // Get all results, this is for admin and teachers
 
-// router.get(
-//   "/",
-//   authenticate,
-//   authorizeRoles("ADMIN", "TEACHER"),
-//   // validateQuery(getAllResultsSchema),
-//   resultController.getAllResults
-// );
+router.get(
+  "/",
+  authenticate,
+  authorizeRoles("ADMIN", "TEACHER"),
+  validateParams(getAllResultsSchema),
+  resultController.getAllResults
+);
+
+// download all result filtered (teacher/admin)
+router.get(
+  "/download",
+  authenticate,
+  authorizeRoles("ADMIN", "TEACHER"),
+  validateParams(getAllResultsSchema),
+  resultController.downloadResults
+);
 
 // Get student's course results
 router.get(

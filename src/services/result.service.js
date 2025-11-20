@@ -197,6 +197,7 @@ export async function getAllResults(user, filters = {}) {
     courseId,
     classId,
     studentId,
+    testType,
     startDate,
     endDate,
     page = 1,
@@ -212,31 +213,20 @@ export async function getAllResults(user, filters = {}) {
   if (studentId) where.studentId = parseInt(studentId);
 
   if (user.role === "TEACHER") {
-    where.test = {
-      courseId: {
-        in: await prisma.course
-          .findMany({
-            where: { teacherId: user.id },
-            select: { id: true },
-          })
-          .then((courses) => courses.map((c) => c.id)),
-      },
-    };
+    const teacherCourseIds = await prisma.course
+      .findMany({
+        where: { teacherId: user.id },
+        select: { id: true },
+      })
+      .then((courses) => courses.map((c) => c.id));
+
+    where.test = { courseId: { in: teacherCourseIds } };
   }
 
-  if (courseId) {
-    where.test = {
-      ...where.test,
-      courseId: parseInt(courseId),
-    };
-  }
-
-  if (classId) {
-    where.student = {
-      ...where.student,
-      classId: parseInt(classId),
-    };
-  }
+  if (courseId) where.test = { ...where.test, courseId: parseInt(courseId) };
+  if (testType && testType !== "ALL")
+    where.test = { ...where.test, type: testType };
+  if (classId) where.student = { ...where.student, classId: parseInt(classId) };
 
   if (startDate || endDate) {
     where.endedAt = {
@@ -267,35 +257,111 @@ export async function getAllResults(user, filters = {}) {
   const sessions = await prisma.testSession.findMany({
     where,
     include: {
-      test: {
-        include: {
-          course: true,
-        },
-      },
+      test: { include: { course: true } },
       student: {
-        select: {
-          id: true,
-          firstname: true,
-          lastname: true,
-          class: true,
-        },
+        select: { id: true, firstname: true, lastname: true, class: true },
       },
-      answers: {
-        include: { question: true },
-      },
+      // answers intentionally not included
     },
     orderBy,
     skip: (page - 1) * limit,
     take: limit,
   });
 
+  // Map sessions with role-aware visibility and PASSED/FAILED
+  const mappedSessions = sessions.map((session) => {
+    const canView = canViewResults(session, user, session.test);
+
+    // Compute status
+    let status;
+    let score = canView ? session.score : null;
+
+    if (session.status === "IN_PROGRESS") {
+      status = "IN_PROGRESS";
+      score = "IN_PROGRESS";
+    } else if (!canView) {
+      status = "unreleased";
+      score = "unreleased";
+    } else if (session.status === "COMPLETED") {
+      const numericScore = Number(session.score);
+      const numericPassMark = Number(session.test.passMark);
+      status = isNaN(numericScore)
+        ? "ungraded"
+        : numericScore >= numericPassMark
+        ? "PASSED"
+        : "FAILED";
+    } else {
+      status = session.status;
+    }
+
+    return {
+      id: session.test.id,
+      title: session.test.title,
+      type: session.test.type,
+      session: {
+        id: session.id,
+        score,
+        status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+      },
+      student: session.student,
+      course: session.test.course,
+    };
+  });
+
+  // Group sessions by course
+  const resultsByCourse = {};
+  mappedSessions.forEach((t) => {
+    const courseIdKey = t.course.id;
+    if (!resultsByCourse[courseIdKey]) {
+      resultsByCourse[courseIdKey] = {
+        course: t.course,
+        tests: [],
+      };
+    }
+    resultsByCourse[courseIdKey].tests.push(t);
+  });
+
+  // Compute per-course stats
+  const courses = Object.values(resultsByCourse).map((c) => {
+    const numericScores = c.tests
+      .map((t) =>
+        typeof t.session.score === "number" ? t.session.score : null
+      )
+      .filter((s) => s !== null);
+
+    const totalTests = c.tests.length;
+    const completedTests = numericScores.length;
+    const totalScore = numericScores.reduce((a, b) => a + b, 0);
+    const averageScore = completedTests ? totalScore / completedTests : 0;
+    const highestScore = completedTests ? Math.max(...numericScores) : 0;
+
+    return {
+      course: c.course,
+      stats: { totalTests, completedTests, averageScore, highestScore },
+      tests: c.tests,
+    };
+  });
+
+  // Compute overall stats
+  const allNumericScores = mappedSessions
+    .map((s) => (typeof s.session.score === "number" ? s.session.score : null))
+    .filter((s) => s !== null);
+
+  const overallStats = {
+    totalCourses: courses.length,
+    totalTests: mappedSessions.length,
+    testsCompleted: allNumericScores.length,
+    averageScore: allNumericScores.length
+      ? allNumericScores.reduce((a, b) => a + b, 0) / allNumericScores.length
+      : 0,
+    highestScore: allNumericScores.length ? Math.max(...allNumericScores) : 0,
+  };
+
   return {
-    sessions: sessions.map((session) => ({
-      ...session,
-      // answers: canViewResults(session, user, session.test)
-      //   ? session.answers
-      //   : null,
-    })),
+    courses,
+    overallStats,
     pagination: {
       page,
       limit,
@@ -674,6 +740,139 @@ export async function generateExcel(results) {
           ? new Date(t.session.startedAt).toLocaleString()
           : "",
         endedAt: t.session?.endedAt
+          ? new Date(t.session.endedAt).toLocaleString()
+          : "",
+      });
+    });
+  });
+
+  return workbook;
+}
+
+export async function generateAllResultsPdf(user, filters) {
+  // Get the results just like frontend used
+  const results = await getAllResults(user, filters);
+
+  // Compute average score
+  const totalScores = [];
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      if (typeof t.session.score === "number")
+        totalScores.push(t.session.score);
+    });
+  });
+
+  const averageScore =
+    totalScores.length > 0
+      ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
+      : "N/A";
+
+  // Build HTML
+  const html = `
+    <html>
+    <head>
+      <style>
+        body, h1, p, table { margin:0; padding:0; font-family: 'Segoe UI', sans-serif; }
+        .container { max-width:900px; margin:auto; padding:40px; background:#fff; border-radius:12px; }
+        table { width:100%; border-collapse:collapse; margin-top:20px; }
+        th, td { padding:12px; text-align:center; border:1px solid #ccc; }
+        thead { background:#2980b9; color:#fff; font-weight:600; }
+        tfoot { font-weight:600; background:#bdc3c7; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Student Transcript</h1>
+        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString()}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Course</th>
+              <th>Test</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Started At</th>
+              <th>Ended At</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${results.courses
+              .map((c) =>
+                c.tests
+                  .map(
+                    (t) => `<tr>
+                      <td>${t.student?.firstname ?? ""} ${
+                      t.student?.lastname ?? ""
+                    }</td>
+                      <td>${c.course.title}</td>
+                      <td>${t.title}</td>
+                      <td>${t.session.score ?? "unreleased"}</td>
+                      <td>${t.session.status ?? "unreleased"}</td>
+                      <td>${
+                        t.session.startedAt
+                          ? new Date(t.session.startedAt).toLocaleString()
+                          : ""
+                      }</td>
+                      <td>${
+                        t.session.endedAt
+                          ? new Date(t.session.endedAt).toLocaleString()
+                          : ""
+                      }</td>
+                    </tr>`
+                  )
+                  .join("")
+              )
+              .join("")}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Average Score</td>
+              <td colspan="4">${averageScore}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const file = { content: html };
+  const pdfBuffer = await pdf.generatePdf(file, { format: "A4" });
+  return pdfBuffer;
+}
+
+/**
+ * Fetch results based on filters and user, then generate Excel
+ */
+export async function generateAllResultsExcel(user, filters) {
+  const results = await getAllResults(user, filters);
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Results");
+
+  sheet.columns = [
+    { header: "Student", key: "student", width: 30 },
+    { header: "Course", key: "course", width: 30 },
+    { header: "Test", key: "test", width: 30 },
+    { header: "Score", key: "score", width: 15 },
+    { header: "Status", key: "status", width: 15 },
+    { header: "Started At", key: "startedAt", width: 20 },
+    { header: "Ended At", key: "endedAt", width: 20 },
+  ];
+
+  results.courses.forEach((c) => {
+    c.tests.forEach((t) => {
+      sheet.addRow({
+        student: `${t.student?.firstname ?? ""} ${t.student?.lastname ?? ""}`,
+        course: c.course.title,
+        test: t.title,
+        score: t.session.score ?? "unreleased",
+        status: t.session.status ?? "unreleased",
+        startedAt: t.session.startedAt
+          ? new Date(t.session.startedAt).toLocaleString()
+          : "",
+        endedAt: t.session.endedAt
           ? new Date(t.session.endedAt).toLocaleString()
           : "",
       });

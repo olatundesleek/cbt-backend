@@ -1,15 +1,14 @@
 import express from "express";
+import * as auth from "../controllers/auth.controller.js";
 import {
-  register,
-  login,
-  logout,
-  changeUsersPassword,
-} from "../controllers/auth.controller.js";
-import { validateBody } from "../middleware/validate.middleware.js";
+  validateBody,
+  validateParams,
+} from "../middleware/validate.middleware.js";
 import {
   registerSchema,
   loginSchema,
   updateUsersPasswordSchema,
+  deleteUserSchema,
 } from "../validators/auth.validator.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -21,21 +20,31 @@ router.post(
   validateBody(registerSchema),
   authenticate,
   authorizeRoles("ADMIN"),
-  register
+  auth.register
 );
 
-router.post("/login", validateBody(loginSchema), login);
+router.post("/login", validateBody(loginSchema), auth.login);
 
 // Clear auth cookie on logout
-router.post("/logout", authenticate, logout);
+router.post("/logout", authenticate, auth.logout);
+
+// delete a user account
+
+router.delete(
+  "/delete-user/:userId",
+  validateParams(deleteUserSchema),
+  authenticate,
+  authorizeRoles("ADMIN"),
+  auth.deleteUser
+);
 
 // route for admin to change a user's password
 router.patch(
-  "/change-user-password/:username",
+  "/change-user-password/:userId",
   authenticate,
   validateBody(updateUsersPasswordSchema),
   authorizeRoles("ADMIN"),
-  changeUsersPassword
+  auth.changeUsersPassword
 );
 
 export default router;

@@ -67,16 +67,89 @@ export async function login({ username, password }) {
   };
 }
 
-export const changeUserPassword = async (username, newPassword) => {
+export async function changeUserPassword(id, newPassword) {
   try {
-    const user = await prisma.user.findUnique({ where: { username } });
-    if (!user) throw new Error("User not found");
-    await prisma.user.update({
-      where: { username },
-      data: { password: newPassword },
+    const userId = parseInt(id, 10);
+    console.log("The id is " + userId);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        username: true,
+        role: true,
+      },
     });
+
+    if (!user) {
+      const error = new Error("User not found");
+      error.status = 404;
+      throw error;
+    }
+
+    // Hash the new password
+    const hash = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hash },
+    });
+
+    return {
+      user,
+    };
   } catch (error) {
     console.error("Error changing user password:", error);
     throw error;
   }
-};
+}
+
+export async function deleteUser(currentUser, id) {
+  try {
+    const userId = parseInt(id, 10);
+
+    console.log("this is the current user" + currentUser);
+    console.log("this is the  user to be deleted" + id);
+
+    console.log(typeof currentUser);
+    console.log(typeof id);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        username: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      const error = new Error("unable to delete user");
+      error.status = 404;
+      error.details = "User not found";
+      throw error;
+    }
+
+    //admin cannot delete current account for safety
+    if (currentUser === id) {
+      const error = new Error("unable to delete user");
+      error.status = 500;
+      error.details = "You cannot Delete your current account";
+      throw error;
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return {
+      user,
+    };
+  } catch (error) {
+    throw error;
+  }
+}
