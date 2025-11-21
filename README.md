@@ -575,8 +575,6 @@ Response:
 POST /api/tests
 ```
 
-````
-
 Create a new test.
 Accessible by users with the **TEACHER** or **ADMIN** role.
 
@@ -758,7 +756,7 @@ Student:
 ## Create Question Bank (Teacher/Admin)
 
 ```http
-POST /api/questionBanks
+POST /api/question-banks
 ```
 
 **Request Body**
@@ -1337,9 +1335,7 @@ GET /api/students
 }
 ```
 
----
-
-## Get Single Student by Username
+### Get Single Student by Username
 
 ```http
 GET /api/students/:username
@@ -1412,7 +1408,7 @@ POST /api/students/:studentId/assign-class
     }
   }
 }
-````
+```
 
 ### Result
 
