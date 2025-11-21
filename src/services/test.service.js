@@ -228,14 +228,23 @@ export const updateTest = async (testId, data, user) => {
 export const getTests = async (user) => {
   switch (user.role) {
     case "ADMIN":
-      return prisma.test.findMany({
+      const allTest = await prisma.test.findMany({
         include: {
+          teacher: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+              username: true,
+            },
+          },
           course: {
             select: {
               title: true,
               classes: true,
             },
           },
+
           bank: {
             select: {
               _count: {
@@ -254,6 +263,15 @@ export const getTests = async (user) => {
         orderBy: {
           createdAt: "desc",
         },
+      });
+
+      return allTest.map((test) => {
+        const { teacher, ...safeTest } = test;
+
+        return {
+          ...safeTest,
+          createdBy: teacher,
+        };
       });
 
     case "TEACHER":
@@ -317,6 +335,14 @@ export const getTests = async (user) => {
           },
         },
         include: {
+          teacher: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+              username: true,
+            },
+          },
           course: {
             select: {
               title: true,
@@ -348,12 +374,13 @@ export const getTests = async (user) => {
 
       // Map session info into each test if there is an in-progress session
       return tests.map((test) => {
-        const { bankId, showResult, createdBy, ...safeTest } = test;
+        const { bankId, showResult, teacher, createdBy, ...safeTest } = test;
 
         const inProgressSession = test.sessions[0]; // will be undefined if no in-progress session
 
         return {
           ...safeTest,
+          createdBy: teacher,
           ...(inProgressSession
             ? { sessionId: inProgressSession.id, progress: "in-progress" }
             : {}),
