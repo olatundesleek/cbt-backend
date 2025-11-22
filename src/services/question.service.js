@@ -167,13 +167,6 @@ export const uploadQuestionsFromCsv = async (filePath, bankId, user) => {
     // if (questions.some((q) => parseInt(q.bankId) !== parseInt(bankId))) {
     //   throw new Error("All questions must belong to the specified bank");
     // }
-    questions.map((t) => {
-      console.log(t.text);
-      console.log(t.options);
-      console.log(t.answer);
-      console.log(t.marks);
-      console.log(t.bankId);
-    });
 
     // Create all questions in a transaction
     const createdQuestions = await prisma.$transaction(
