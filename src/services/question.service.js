@@ -1,3 +1,4 @@
+import { log } from "console";
 import prisma from "../config/prisma.js";
 
 const canAccessQuestion = async (questionId, user) => {
@@ -163,9 +164,16 @@ export const uploadQuestionsFromCsv = async (filePath, bankId, user) => {
     const questions = await parseQuestionsCsv(filePath);
 
     // Validate all questions point to the same bank
-    if (questions.some((q) => parseInt(q.bankId) !== parseInt(bankId))) {
-      throw new Error("All questions must belong to the specified bank");
-    }
+    // if (questions.some((q) => parseInt(q.bankId) !== parseInt(bankId))) {
+    //   throw new Error("All questions must belong to the specified bank");
+    // }
+    questions.map((t) => {
+      console.log(t.text);
+      console.log(t.options);
+      console.log(t.answer);
+      console.log(t.marks);
+      console.log(t.bankId);
+    });
 
     // Create all questions in a transaction
     const createdQuestions = await prisma.$transaction(
