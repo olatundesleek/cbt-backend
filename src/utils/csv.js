@@ -7,7 +7,7 @@ export const QUESTION_CSV_HEADERS = ["text", "options", "answer", "marks"];
 export const QUESTION_CSV_SAMPLE = {
   text: "What is the capital of France?",
   options: JSON.stringify(["Paris", "London", "Berlin", "Madrid"]),
-  answer: "0", // Index of the correct answer (0-based)
+  answer: "paris",
   marks: "1",
 };
 
@@ -27,7 +27,7 @@ export function parseQuestionsCsv(filePath) {
   return records.map((record) => ({
     text: record.text.trim(),
     options: JSON.parse(record.options),
-    answer: parseInt(record.answer),
+    answer: record.answer.toString(),
     marks: parseInt(record.marks) || 1,
   }));
 }
