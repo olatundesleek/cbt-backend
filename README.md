@@ -12,11 +12,15 @@ A robust backend system for managing computer-based tests, built with Express.js
   - [Environment Variables](#environment-variables)
 - [Database Schema](#database-schema)
 - [API Documentation](#api-documentation)
+  - [Complete API Routes](#complete-api-routes)
   - [Authentication](#authentication)
   - [Tests](#tests)
   - [Courses](#courses)
   - [Question Banks](#question-banks)
   - [Students](#students)
+  - [Notifications](#notification-api)
+  - [System Settings](#system-settings-api)
+  - [Controller Exports](#controller-exports-summary)
 - [Error Handling](#error-handling)
 
 ## Features
@@ -232,9 +236,9 @@ Response:
 
 #### Create Class (Admin only)
 
-\`\`\`http
-POST /api/classes
-\`\`\`
+```http
+POST /api/class
+```
 
 Request body:
 
@@ -788,7 +792,7 @@ POST /api/question-banks
 ## Get All Question Banks (Teacher/Admin)
 
 ```http
-GET /api/questionBanks
+GET /api/question-banks
 ```
 
 **Response**
@@ -816,7 +820,7 @@ GET /api/questionBanks
 ## Get Question Bank by ID
 
 ```http
-GET /api/questionBanks/:bankId
+GET /api/question-banks/:bankId
 ```
 
 **Params**
@@ -849,7 +853,7 @@ GET /api/questionBanks/:bankId
 ## Update Question Bank (Teacher/Admin)
 
 ```http
-PATCH /api/questionBanks/:bankId
+PATCH /api/question-banks/:bankId
 ```
 
 **Params**
@@ -884,7 +888,7 @@ PATCH /api/questionBanks/:bankId
 ## Delete Question Bank (Teacher/Admin)
 
 ```http
-DELETE /api/questionBanks/:bankId
+DELETE /api/question-banks/:bankId
 ```
 
 **Response**
@@ -899,7 +903,7 @@ DELETE /api/questionBanks/:bankId
 ## Get Questions in a Question Bank
 
 ```http
-GET /api/questionBanks/:bankId/questions
+GET /api/question-banks/:bankId/questions
 ```
 
 **Response**
@@ -1134,9 +1138,9 @@ text,options,answer,marks
 
 #### Start Test Session
 
-\`\`\`http
-POST /api/testSessions
-\`\`\`
+```http
+POST /api/sessions
+```
 
 Request body:
 
@@ -1163,9 +1167,9 @@ Response:
 
 #### Submit Answer
 
-\`\`\`http
-POST /api/testSessions/:sessionId/answers
-\`\`\`
+```http
+POST /api/sessions/:sessionId/answers
+```
 
 Request body:
 
@@ -1193,9 +1197,9 @@ Response:
 
 #### End Test Session
 
-\`\`\`http
-POST /api/testSessions/:sessionId/submit
-\`\`\`
+```http
+POST /api/sessions/:sessionId/submit
+```
 
 Response:
 
@@ -1749,87 +1753,16 @@ Retrieve aggregated and detailed results for a student across their courses.
               "startedAt": "2025-10-30T10:00:00.000Z",
               "endedAt": "2025-10-30T11:00:00.000Z"
             }
-          }
-        ]
-      }
-    ]
+        }
+      ]
+    }
   }
 }
 ```
-
----
-
-## 5. Download Student Course Results (Student)
-
-Download a student's course results in PDF or Excel format.
-
-**Endpoint:** `GET /api/results/student/courses/download`
-
-**Access:** STUDENT
-
-**Query Parameters:**
-
-| Parameter   | Type     | Default | Description                      |
-| :---------- | :------- | :------ | :------------------------------- |
-| `startDate` | `Date`   | -       | ISO date string – start of range |
-| `endDate`   | `Date`   | -       | ISO date string – end of range   |
-| `format`    | `String` | `pdf`   | File format: `pdf` or `excel`    |
-
-**Response:** File download (PDF or Excel)
-
-**Notes:**
-
-- PDF is styled as a professional transcript.
-- Excel contains all tests and scores with headers for course, test, score, status, startedAt, endedAt.
-
----
-
-## 6. Toggle Result Visibility (Admin only)
-
-Update the visibility status of a test's results.
-
-**Endpoint:** `PATCH /api/results/test/:testId/release`
-
-**Access:** ADMIN
-
-**URL Parameters:**
-
-| Parameter | Type     | Description    |
-| :-------- | :------- | :------------- |
-| `testId`  | `Number` | ID of the test |
-
-**Request Body:**
-
-```json
-{
-  "showResult": true
-}
-```
-
-**Response Example:**
-
-```json
-{
-  "success": true,
-  "message": "Result visibility updated successfully",
-  "data": {
-    "id": 1,
-    "title": "Midterm Exam",
-    "showResult": true
-  }
-}
-```
-
-````markdown
-# Notification API
-
-Manage notifications in the CBT system. Notifications can be targeted to general users, teachers, students, specific classes, or specific courses.
-
----
 
 ## Create Notification
 
-**Endpoint:** `POST /api/notifications`  
+**Endpoint:** `POST /api/notification`
 **Access:** Admin only
 
 **Request Body (JSON or Form-Data):**
@@ -1842,7 +1775,6 @@ Manage notifications in the CBT system. Notifications can be targeted to general
   "classId": 3
 }
 ```
-````
 
 **Notes:**
 
@@ -1884,7 +1816,7 @@ Manage notifications in the CBT system. Notifications can be targeted to general
 
 ## Update Notification
 
-**Endpoint:** `PATCH /api/notifications/:notificationId`  
+**Endpoint:** `PATCH /api/notification/:notificationId`
 **Access:** Admin only
 
 **Request Body (JSON):**
@@ -1919,7 +1851,7 @@ Manage notifications in the CBT system. Notifications can be targeted to general
 
 ## Delete Notification
 
-**Endpoint:** `DELETE /api/notifications/:notificationId`  
+**Endpoint:** `DELETE /api/notification/:notificationId`
 **Access:** Admin only
 
 **Response (Success):**
@@ -1936,7 +1868,7 @@ Manage notifications in the CBT system. Notifications can be targeted to general
 
 ## Get Notifications for Logged-in User
 
-**Endpoint:** `GET /api/notifications`  
+**Endpoint:** `GET /api/notification`
 **Access:** Any authenticated user
 
 **Response Example (Admin sees all):**
@@ -2015,7 +1947,7 @@ This API allows administrators to retrieve and update system settings for the CB
 
 # 🔹 GET — Fetch System Settings
 
-**Endpoint:**  
+**Endpoint:**
 `GET /api/system-settings`
 
 ### Success Response
@@ -2037,7 +1969,7 @@ This API allows administrators to retrieve and update system settings for the CB
 }
 ```
 
-## Error Handling
+### Error Handling
 
 The API uses consistent error responses:
 

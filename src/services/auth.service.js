@@ -10,6 +10,7 @@ export async function register({
   role,
   classId,
 }) {
+  username = username.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) throw new Error("username exists");
   const hash = await bcrypt.hash(password, 10);
@@ -36,35 +37,40 @@ export async function register({
   };
 }
 export async function login({ username, password }) {
-  const user = await prisma.user.findUnique({ where: { username } });
-  if (!user) {
-    const error = new Error("unable to login");
-    error.status = 401;
-    error.details = "invalid credentials";
-    throw error;
-  }
-  const ok = await bcrypt.compare(password, user.password);
-  if (!ok) {
-    const error = new Error("unable to login");
-    error.details = "invalid credentials";
-    error.status = 401;
-    throw error;
-  }
-  const token = signToken({
-    id: user.id,
-    role: user.role,
-    username: user.username,
-  });
-  return {
-    user: {
+  try {
+    username = username.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      const error = new Error("unable to login");
+      error.status = 401;
+      error.details = "invalid credentials";
+      throw error;
+    }
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      const error = new Error("unable to login");
+      error.details = "invalid credentials";
+      error.status = 401;
+      throw error;
+    }
+    const token = signToken({
       id: user.id,
-      firstname: user.firstname,
-      lastname: user.lastname,
-      username: user.username,
       role: user.role,
-    },
-    token,
-  };
+      username: user.username,
+    });
+    return {
+      user: {
+        id: user.id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        username: user.username,
+        role: user.role,
+      },
+      token,
+    };
+  } catch (error) {
+    throw error;
+  }
 }
 
 export async function changeUserPassword(id, newPassword) {

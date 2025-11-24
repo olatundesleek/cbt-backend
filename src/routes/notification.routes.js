@@ -11,7 +11,7 @@ import {
   updateNotificationSchema,
   deleteNotificationSchema,
 } from "../validators/notification.validator.js";
-import * as notification from "../controllers/notification.cotroller.js";
+import * as notification from "../controllers/notification.controller.js";
 
 const router = express.Router();
 
