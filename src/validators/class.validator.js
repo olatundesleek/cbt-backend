@@ -1,7 +1,8 @@
 import Joi from "joi";
+
 export const createClassSchema = Joi.object({
   className: Joi.string().min(2).max(100).required(),
-  teacherId: Joi.number().optional(),
+  teacherId: Joi.number().required(),
   courses: Joi.array().items(Joi.number()).optional(),
 });
 export const getClassSchema = Joi.object({

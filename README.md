@@ -473,8 +473,7 @@ Request body:
 {
   "title": "Mathematics 101",
   "description": "Introduction to Basic Mathematics",
-  "teacherId": 1,
-  "courses": [1, 2] //courses are optional during class creation
+  "teacherId": 1
 }
 ```
 

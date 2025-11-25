@@ -5,8 +5,14 @@ export const registerSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().min(6).required(),
   role: Joi.string().valid("ADMIN", "TEACHER", "STUDENT").required(),
-  classId: Joi.number().optional().allow(null),
+
+  classId: Joi.number().when("role", {
+    is: "STUDENT",
+    then: Joi.required(),
+    otherwise: Joi.optional().allow(null),
+  }),
 });
+
 export const loginSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
