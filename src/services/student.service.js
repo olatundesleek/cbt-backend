@@ -9,8 +9,9 @@ export const getStudents = async (user) => {
         firstname: true,
         lastname: true,
         username: true,
-        class: true,
-        courses: true,
+        class: {
+          include: { courses: true },
+        },
       },
     });
   }
@@ -26,7 +27,9 @@ export const getStudents = async (user) => {
         firstname: true,
         lastname: true,
         username: true,
-        class: true,
+        class: {
+          include: { courses: true },
+        },
       },
     });
   }
@@ -37,7 +40,14 @@ export const getStudents = async (user) => {
 export const getStudentByUsername = async (requester, username) => {
   const student = await prisma.user.findUnique({
     where: { username: username },
-    include: { class: true },
+    select: {
+      firstname: true,
+      lastname: true,
+      username: true,
+      class: {
+        include: { courses: true },
+      },
+    },
   });
 
   if (!student || student.role !== "STUDENT")
