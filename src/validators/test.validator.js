@@ -108,3 +108,10 @@ export const testIdSchema = Joi.object({
     "any.required": "Test ID is required",
   }),
 });
+
+export const deleteTestSchema = Joi.object({
+  testId: Joi.number().required().messages({
+    "number.base": "Test ID must be a number",
+    "any.required": "Test ID is required",
+  }),
+});

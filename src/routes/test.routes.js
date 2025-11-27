@@ -9,6 +9,7 @@ import {
   createTestSchema,
   updateTestSchema,
   testIdSchema,
+  deleteTestSchema,
 } from "../validators/test.validator.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 
@@ -39,6 +40,14 @@ router.patch(
   validateParams(testIdSchema),
   validateBody(updateTestSchema),
   testController.updateTest
+);
+
+router.delete(
+  "/:testId",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  validateParams(deleteTestSchema),
+  testController.deleteTest
 );
 
 // Get tests (filtered based on user role)

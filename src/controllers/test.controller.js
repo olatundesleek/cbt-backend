@@ -40,3 +40,14 @@ export async function getTests(req, res, next) {
     next(err);
   }
 }
+
+export async function deleteTest(req, res, next) {
+  try {
+    console.log("Deleted test:", req.params.testId);
+    const test = await testService.deleteTest(req.params.testId, req.user);
+
+    return success(res, "Test deleted successfully", test);
+  } catch (err) {
+    next(err);
+  }
+}
