@@ -17,7 +17,12 @@ const canAccessTest = async (testId, user) => {
     },
   });
 
-  if (!test) throw new Error("Test not found");
+  if (!test) {
+    const error = new Error();
+    error.status = 404;
+    error.details = "Test not found";
+    throw error;
+  }
 
   // Admin can access all tests
   if (user.role === "ADMIN") return true;
@@ -389,5 +394,21 @@ export const getTests = async (user) => {
 
     default:
       throw new Error("Invalid role");
+  }
+};
+
+export const deleteTest = async (testId, user) => {
+  try {
+    if (!(await canAccessTest(testId, user))) {
+      throw new Error("You don't have permission to delete this test");
+    }
+
+    await prisma.test.delete({
+      where: { id: parseInt(testId) },
+    });
+  } catch (error) {
+    console.error(error);
+    error.message = "Unable to delete test";
+    throw error;
   }
 };

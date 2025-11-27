@@ -117,7 +117,7 @@ model Question {
   answer    String
   marks     Int          @default(1)
   bankId    Int
-  bank      QuestionBank @relation(fields: [bankId], references: [id])
+  bank      QuestionBank @relation(fields: [bankId], references: [id],onDelete: Cascade)
   answers   Answer[]
   createdAt DateTime     @default(now())
 }
@@ -126,15 +126,18 @@ model TestSession {
   id         Int           @id @default(autoincrement())
   studentId  Int
   testId     Int
-  attemptNo  Int?           @default(1)
+  attemptNo  Int?          @default(1)
   status     SessionStatus @default(IN_PROGRESS)
   startedAt  DateTime      @default(now())
   endedAt    DateTime?
   score      Int?          @default(0)
+
   student    User          @relation(fields: [studentId], references: [id])
-  test       Test          @relation(fields: [testId], references: [id])
-  answers    Answer[]
+  test       Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  answers    Answer[]      
 }
+
 
 model Answer {
   id             Int          @id @default(autoincrement())
@@ -143,8 +146,8 @@ model Answer {
   selectedOption String
   isCorrect      Boolean      @default(false)
   createdAt      DateTime     @default(now())
-  session        TestSession  @relation(fields: [testSessionId], references: [id])
-  question       Question     @relation(fields: [questionId], references: [id])
+  session        TestSession  @relation(fields: [testSessionId], references: [id],onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id],onDelete: Cascade)
 }
 
 model Notification {

@@ -6,6 +6,7 @@ export const getStudents = async (user) => {
     return prisma.user.findMany({
       where: { role: "STUDENT" },
       select: {
+        id: true,
         firstname: true,
         lastname: true,
         username: true,
@@ -24,6 +25,7 @@ export const getStudents = async (user) => {
         class: { teacherId: user.id },
       },
       select: {
+        id: true,
         firstname: true,
         lastname: true,
         username: true,
@@ -41,6 +43,7 @@ export const getStudentByUsername = async (requester, username) => {
   const student = await prisma.user.findUnique({
     where: { username: username },
     select: {
+      id: true,
       firstname: true,
       lastname: true,
       username: true,

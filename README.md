@@ -654,6 +654,30 @@ Accessible by users with the **TEACHER** or **ADMIN** role.
 }
 ```
 
+#### Delete Test (Teacher/Admin)
+
+```http
+DELETE /api/tests/:testId
+```
+
+Delete an existing test. Accessible by the test's creator (teacher) or an ADMIN.
+
+**Params**
+
+- `testId` (number, required)
+
+**Auth:** Required (Bearer token)
+**Roles:** `TEACHER`, `ADMIN`
+
+**Response (Success)**
+
+```json
+{
+  "success": true,
+  "message": "Test deleted successfully"
+}
+```
+
 #### Get Tests
 
 \`\`\`http
