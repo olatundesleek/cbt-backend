@@ -208,7 +208,12 @@ export async function startSession({ studentId, testId }) {
       where: { id: studentId },
       select: { id: true, username: true, firstname: true, lastname: true },
     });
-    if (!student) throw new Error("Student not found");
+    if (!student) {
+      const error = new Error();
+      error.details = "Student not found";
+      error.statusCode = 404;
+      throw error;
+    }
 
     // Fetch test with course, class, and questions
     const test = await prisma.test.findUnique({
@@ -218,16 +223,33 @@ export async function startSession({ studentId, testId }) {
         bank: { include: { questions: { orderBy: { id: "asc" } } } },
       },
     });
-    if (!test) throw new Error("Test not found");
+    if (!test) {
+      const error = new Error();
+      error.details = "Test not found";
+      error.statusCode = 404;
+      throw error;
+    }
 
     const now = new Date();
 
-    if (test.startTime && test.startTime > now)
-      throw new Error("Test not yet started");
-    if (test.endTime && test.endTime < now)
-      throw new Error("Test already ended");
-    if (test.testState !== "active") throw new Error("Test is not active");
-
+    if (test.startTime && test.startTime > now) {
+      const error = new Error();
+      error.details = "Test not yet started";
+      error.statusCode = 400;
+      throw error;
+    }
+    if (test.endTime && test.endTime < now) {
+      const error = new Error();
+      error.details = "Test already ended";
+      error.statusCode = 400;
+      throw error;
+    }
+    if (test.testState !== "active") {
+      const error = new Error();
+      error.details = "Test is not active";
+      error.statusCode = 400;
+      throw error;
+    }
     // Verify student enrollment
     const enrolled = await prisma.course.findFirst({
       where: {
@@ -235,7 +257,13 @@ export async function startSession({ studentId, testId }) {
         classes: { some: { students: { some: { id: studentId } } } },
       },
     });
-    if (!enrolled) throw new Error("Student not enrolled in this course");
+
+    if (!enrolled) {
+      const error = new Error();
+      error.details = "Student not enrolled for this course";
+      error.statusCode = 404;
+      throw error;
+    }
 
     // Count completed attempts
     const attemptCount = await prisma.testSession.count({
@@ -367,7 +395,9 @@ export async function startSession({ studentId, testId }) {
     };
   } catch (error) {
     console.error("Error in startSession:", error);
-    throw new Error(error.message || "Failed to start session");
+    // throw new Error(error.message || "Failed to start session");
+    error.message = "failed to start test session";
+    throw error;
   }
 }
 
