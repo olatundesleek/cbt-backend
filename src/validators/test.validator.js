@@ -39,11 +39,9 @@ export const createTestSchema = Joi.object({
     .required()
     .integer()
     .min(1)
-    .max(10)
     .default(1)
     .messages({
       "number.min": "At least 1 attempt is required",
-      "number.max": "Attempts cannot exceed 10",
     }),
   passMark: Joi.number().integer().min(0).max(100).required().messages({
     "number.min": "Pass mark cannot be less than 0",
@@ -67,9 +65,7 @@ export const updateTestSchema = Joi.object({
         "Test state must be either 'active', 'inactive', 'scheduled', or 'completed'",
       "any.required": "Test state is required",
     }),
-  startTime: Joi.date().iso().greater("now").messages({
-    "date.greater": "Start time must be in the future",
-  }),
+  startTime: Joi.date().iso(),
   endTime: Joi.date().iso().greater(Joi.ref("startTime")).messages({
     "date.greater": "End time must be after start time",
   }),
@@ -89,11 +85,9 @@ export const updateTestSchema = Joi.object({
     .required()
     .integer()
     .min(1)
-    .max(10)
     .default(1)
     .messages({
       "number.min": "At least 1 attempt is required",
-      "number.max": "Attempts cannot exceed 10",
     }),
   passMark: Joi.number().integer().min(0).max(100).required().messages({
     "number.min": "Pass mark cannot be less than 0",
