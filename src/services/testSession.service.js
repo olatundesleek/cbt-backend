@@ -269,9 +269,12 @@ export async function startSession({ studentId, testId }) {
     const attemptCount = await prisma.testSession.count({
       where: { studentId, testId, status: "COMPLETED" },
     });
-    if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed)
-      throw new Error("Maximum attempts reached for this test");
-
+    if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed) {
+      const error = new Error();
+      error.details = "Maximum attempts reached for this test";
+      error.statusCode = 400;
+      throw error;
+    }
     // Check for existing unfinished session
     const existing = await prisma.testSession.findFirst({
       where: { studentId, testId, status: "IN_PROGRESS", endedAt: null },
