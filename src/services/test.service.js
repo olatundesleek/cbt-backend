@@ -210,20 +210,54 @@ export const updateTest = async (testId, data, user) => {
     throw new Error("You don't have permission to update this test");
   }
 
+  // Check course if courseId is updated
+  if (data.courseId) {
+    const course = await prisma.course.findUnique({
+      where: { id: parseInt(data.courseId) },
+      include: { teacher: true },
+    });
+
+    if (!course) throw new Error("Course not found");
+    if (course.teacherId !== user.id && user.role !== "ADMIN") {
+      throw new Error(
+        "You don't have permission to assign this course to the test"
+      );
+    }
+  }
+
+  // Check question bank if bankId is updated
+  if (data.bankId) {
+    const bank = await prisma.questionBank.findUnique({
+      where: { id: parseInt(data.bankId) },
+      include: { teacher: true, questions: true },
+    });
+
+    if (!bank) {
+      const error = new Error("Unable to update test");
+      error.details = "Question bank not found";
+      throw error;
+    }
+
+    if (bank.questions.length === 0) {
+      const error = new Error("Unable to update test");
+      error.details = "Question bank is empty";
+      throw error;
+    }
+
+    if (bank.createdBy !== user.id && user.role !== "ADMIN") {
+      const error = new Error("Unable to update test");
+      error.details = "You don't have permission to use this question bank";
+      throw error;
+    }
+  }
+
+  // Now update
   const test = await prisma.test.update({
     where: { id: parseInt(testId) },
     data,
     include: {
-      course: {
-        select: {
-          title: true,
-        },
-      },
-      bank: {
-        select: {
-          questionBankName: true,
-        },
-      },
+      course: { select: { title: true } },
+      bank: { select: { questionBankName: true } },
     },
   });
 
