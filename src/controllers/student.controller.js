@@ -24,7 +24,6 @@ export async function assignClassToStudent(req, res, next) {
   try {
     const { studentId } = req.params;
     const { classId } = req.body;
-    console.log("Assigning class:", classId, "to student:", studentId);
 
     const updated = await studentService.assignStudentToClass(
       studentId,

@@ -8,8 +8,6 @@ import { setIo } from "./src/utils/socket.js";
 if (process.env.NODE_ENV !== "production") {
   const envFile = `.env.${process.env.NODE_ENV || "development"}`;
   dotenv.config({ path: envFile });
-  console.log("ENV:", envFile);
-  console.log("ENV:", process.env.NODE_ENV);
 }
 
 const PORT = process.env.PORT || 4000;
@@ -31,7 +29,6 @@ const allowedOrigins = [
 ];
 
 const isProduction = process.env.NODE_ENV === "production";
-console.log(isProduction);
 
 // =========================
 // Socket.IO Initialization
@@ -67,8 +64,6 @@ setIo(io);
 // Socket.IO Events
 // =========================
 io.on("connection", (socket) => {
-  console.log("New client connected:", socket.id);
-
   socket.on("join_session", (sessionId) => {
     try {
       socket.join(`session_${sessionId}`);
