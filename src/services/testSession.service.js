@@ -58,149 +58,6 @@ export async function endSessionByTimer(sessionId, reason = "duration") {
   }
 }
 
-// export async function startSession({ studentId, testId }) {
-//   try {
-//     // Fetch student info
-//     const student = await prisma.user.findUnique({
-//       where: { id: studentId },
-//       select: { id: true, username: true, firstname: true, lastname: true },
-//     });
-//     if (!student) throw new Error("Student not found");
-
-//     // Fetch test with course, class, and questions
-//     const test = await prisma.test.findUnique({
-//       where: { id: testId },
-//       include: {
-//         course: { include: { classes: { include: { students: true } } } },
-//         bank: { include: { questions: { orderBy: { id: "asc" } } } },
-//       },
-//     });
-//     if (!test) throw new Error("Test not found");
-
-//     const now = new Date();
-
-//     if (test.startTime && test.startTime > now)
-//       throw new Error("Test not yet started");
-//     if (test.endTime && test.endTime < now)
-//       throw new Error("Test already ended");
-//     if (test.testState !== "active") throw new Error("Test is not active");
-
-//     // Verify student enrollment
-//     const enrolled = await prisma.course.findFirst({
-//       where: {
-//         id: test.courseId,
-//         classes: { some: { students: { some: { id: studentId } } } },
-//       },
-//     });
-//     if (!enrolled) throw new Error("Student not enrolled in this course");
-
-//     // Count completed attempts
-//     const attemptCount = await prisma.testSession.count({
-//       where: { studentId, testId, status: "COMPLETED" },
-//     });
-//     if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed)
-//       throw new Error("Maximum attempts reached for this test");
-
-//     // Check for existing unfinished session
-//     const existing = await prisma.testSession.findFirst({
-//       where: { studentId, testId, status: "IN_PROGRESS", endedAt: null },
-//     });
-
-//     // Get questions from test bank
-//     const allQuestions = test.bank.questions;
-
-//     if (existing) {
-//       const answeredCount = await prisma.answer.count({
-//         where: { testSessionId: existing.id },
-//       });
-
-//       const course = {
-//         courseTitle: test.course.title, //
-//         testTitle: test.title,
-//       };
-//       // Add displayNumber for frontend
-//       const questions = allQuestions
-//         .slice(0, 2)
-//         .map(({ answer, ...rest }, i) => ({ ...rest, displayNumber: i + 1 }));
-
-//       return {
-//         student,
-//         session: existing,
-//         course,
-//         questions,
-//         progress: { answeredCount, total: allQuestions.length },
-//       };
-//     }
-
-//     // Create new session
-//     const session = await prisma.testSession.create({
-//       data: { studentId, testId, status: "IN_PROGRESS" },
-//       include: { answers: true },
-//     });
-
-//     // Calculate timers
-//     const endTimeMs = test.endTime
-//       ? new Date(test.endTime).getTime() - now.getTime()
-//       : Infinity;
-//     const durationMs = test.duration ? test.duration * 60 * 1000 : Infinity;
-//     const timeoutMs = Math.min(endTimeMs, durationMs);
-
-//     // Safe socket & timer setup
-//     try {
-//       if (timeoutMs > 0 && timeoutMs !== Infinity) {
-//         const io = getIo();
-
-//         const timeout = setTimeout(
-//           () =>
-//             endSessionByTimer(
-//               session.id,
-//               timeoutMs === endTimeMs ? "endTime" : "duration"
-//             ),
-//           timeoutMs
-//         );
-
-//         const interval = setInterval(() => {
-//           const remaining = Math.max(
-//             0,
-//             timeoutMs - (Date.now() - now.getTime())
-//           );
-//           io.to(`session_${session.id}`).emit("time_left", {
-//             sessionId: session.id,
-//             timeLeft: remaining,
-//           });
-//         }, 1000);
-
-//         sessionTimers.set(session.id, { timeout, interval });
-//       }
-
-//       const io = getIo();
-//       io.to(`session_${session.id}`).emit("test_started", {
-//         sessionId: session.id,
-//         testId,
-//       });
-//     } catch (err) {
-//       console.warn("Socket/timer setup failed:", err);
-//     }
-
-//     // Return first questions (hide answers) with displayNumber
-//     const totalQuestions = allQuestions.length;
-//     const questions = allQuestions
-//       .slice(0, 2)
-//       .map(({ answer, ...rest }, i) => ({ ...rest, displayNumber: i + 1 }));
-
-//     return {
-//       student,
-//       session,
-//       questions,
-//       totalQuestions,
-//       progress: { answeredCount: 0, total: totalQuestions },
-//     };
-//   } catch (error) {
-//     console.error("Error in startSession:", error);
-//     throw new Error(error.message || "Failed to start session");
-//   }
-// }
-
 export async function startSession({ studentId, testId }) {
   try {
     // Fetch student info
@@ -302,7 +159,7 @@ export async function startSession({ studentId, testId }) {
       const existingAnswers = await prisma.answer.findMany({
         where: {
           testSessionId: existing.id,
-          questionId: { in: baseQuestions.map((q) => q.id) },
+          questionId: { in: allQuestions.map((q) => q.id) },
         },
         select: { questionId: true, selectedOption: true },
       });
@@ -323,6 +180,7 @@ export async function startSession({ studentId, testId }) {
         session: existing,
         course,
         questions, // now includes selectedOption
+        answered: existingAnswers,
         progress: { answeredCount, total: allQuestions.length },
       };
     }
@@ -483,7 +341,10 @@ export async function submitAnswerOnly({
   });
   if (!question) throw new Error("Question not found");
 
-  const isCorrect = question.answer === selectedOption;
+  const isCorrect =
+    question.answer.trim().toLowerCase() ===
+    selectedOption.trim().toLowerCase();
+
   const existing = await prisma.answer.findFirst({
     where: { testSessionId: sessionId, questionId },
   });
