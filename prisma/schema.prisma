@@ -132,7 +132,7 @@ model TestSession {
   endedAt    DateTime?
   score      Int?          @default(0)
 
-  student    User          @relation(fields: [studentId], references: [id])
+  student    User          @relation(fields: [studentId], references: [id],onDelete: Cascade)
   test       Test          @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   answers    Answer[]      
