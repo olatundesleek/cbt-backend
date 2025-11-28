@@ -83,7 +83,7 @@ model Test {
   course     Course       @relation(fields: [courseId], references: [id])
 
   bankId     Int
-  bank       QuestionBank @relation(fields: [bankId], references: [id])
+  bank       QuestionBank @relation(fields: [bankId], references: [id],onDelete: Cascade)
 
   createdBy  Int
   teacher    User         @relation("UserTests", fields: [createdBy], references: [id])
