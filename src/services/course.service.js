@@ -88,10 +88,34 @@ export const updateCourse = async (courseId, title, description, teacherId) => {
 
 export const deleteCourse = async (courseId) => {
   try {
-    await prisma.course.delete({ where: { id: parseInt(courseId) } });
+    const id = parseInt(courseId);
+
+    // 1. Check if any test exists in this course
+    const linkedTests = await prisma.test.findMany({
+      where: { courseId: id },
+      select: { id: true, title: true },
+    });
+
+    if (linkedTests.length > 0) {
+      const titles = linkedTests.map((t) => t.title).join(", ");
+      const error = new Error("unable to delete course");
+      error.details = `Cannot delete this course. The following tests are still using it: ${titles}. Please assign them to another course first.`;
+      throw error;
+    }
+
+    // 2. Disconnect course from classes
+    await prisma.class.updateMany({
+      where: { courses: { some: { id } } },
+      data: { courses: { disconnect: { id } } },
+    });
+
+    // 3. Delete the course (question banks will automatically set courseId to null)
+    await prisma.course.delete({ where: { id } });
+
+    console.log(`Course ${id} deleted successfully.`);
+    return { deletedCourseId: id };
   } catch (error) {
-    console.error("Prisma error deleting course:", error);
-    throw new Error("Error deleting course");
+    throw error;
   }
 };
 
@@ -131,7 +155,6 @@ export async function getCoursesForUser(user) {
 
     throw new Error("Invalid role");
   } catch (error) {
-    console.error("Error fetching courses for user:", error);
     throw error;
   }
 }
