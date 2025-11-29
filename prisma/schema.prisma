@@ -102,7 +102,7 @@ model QuestionBank {
   questionBankName        String      @unique
   description String?
   courseId    Int?
-  course      Course?     @relation(fields: [courseId], references: [id])
+  course      Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
   tests     Test[]
   questions   Question[]
   createdBy   Int
@@ -158,10 +158,10 @@ model Notification {
 
  
   classId      Int?
-  class        Class?           @relation(fields: [classId], references: [id])
+  class        Class?           @relation(fields: [classId], references: [id], onDelete: SetNull)
 
   courseId     Int?
-  course       Course?          @relation(fields: [courseId], references: [id])
+  course       Course?          @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
 
   createdById  Int?

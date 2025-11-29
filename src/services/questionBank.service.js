@@ -173,10 +173,27 @@ export const deleteQuestionBank = async (bankId, user) => {
     throw new Error("Cannot delete this question bank");
   }
 
-  // This will cascade delete all questions in the bank
-  await prisma.questionBank.delete({
-    where: { id: parseInt(bankId) },
+  const bankIdInt = parseInt(bankId);
+
+  // Check if any test is using this bank
+  const testsUsingBank = await prisma.test.findMany({
+    where: { bankId: bankIdInt },
+    select: { id: true, title: true },
   });
+
+  if (testsUsingBank.length > 0) {
+    const testTitles = testsUsingBank.map((t) => t.title).join(", ");
+    const error = new Error("unable to delete question bank");
+    error.details = `Cannot delete this question bank. The following tests are still using it: ${testTitles}. Please assign them to another bank first.`;
+    throw error;
+  }
+
+  // Safe to delete, this will cascade delete all questions in the bank
+  await prisma.questionBank.delete({
+    where: { id: bankIdInt },
+  });
+
+  return { message: "Question bank deleted successfully" };
 };
 
 export const getQuestionsInBank = async (bankId, user) => {
