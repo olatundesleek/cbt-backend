@@ -168,6 +168,15 @@ export async function startSession({ studentId, testId }) {
         existingAnswers.map((a) => [a.questionId, a.selectedOption])
       );
 
+      // add displayNumber and selectedOption to questions
+      const answeredWithDisplayNumbers = existingAnswers.map((a) => {
+        const index = allQuestions.findIndex((q) => q.id === a.questionId);
+        return {
+          ...a,
+          displayNumber: index + 1, // This is the display number
+        };
+      });
+
       // Build questions WITH selectedOption
       const questions = baseQuestions.map(({ answer, ...rest }, i) => ({
         ...rest,
@@ -180,7 +189,7 @@ export async function startSession({ studentId, testId }) {
         session: existing,
         course,
         questions, // now includes selectedOption
-        answered: existingAnswers,
+        answered: answeredWithDisplayNumbers,
         progress: { answeredCount, total: allQuestions.length },
       };
     }
@@ -190,7 +199,7 @@ export async function startSession({ studentId, testId }) {
     // --------------------------------------------------------
     const session = await prisma.testSession.create({
       data: { studentId, testId, status: "IN_PROGRESS" },
-      include: { answers: true },
+      // include: { answers: true },
     });
 
     // Timers + socket (unchanged)
