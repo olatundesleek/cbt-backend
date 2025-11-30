@@ -61,6 +61,7 @@ export const getStudentCourseResultsSchema = Joi.object({
   courseId: Joi.number().integer().positive(), // Optional - filter by specific course
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso().min(Joi.ref("startDate")),
+  limit: Joi.number().integer().min(1).max(100).default(10),
   testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
 }).messages({
   "date.min": "End date must be after start date",
@@ -69,13 +70,16 @@ export const getStudentCourseResultsSchema = Joi.object({
 
 // Validation for toggling result visibility
 export const toggleResultReleaseSchema = Joi.object({
+  showResult: Joi.boolean().required().messages({
+    "boolean.base": "Show result must be a boolean",
+    "any.required": "Show result is required",
+  }),
+});
+
+export const toggleResultReleaseParamSchema = Joi.object({
   testId: Joi.number().integer().positive().required().messages({
     "number.base": "Test ID must be a number",
     "number.positive": "Test ID must be positive",
     "any.required": "Test ID is required",
-  }),
-  showResult: Joi.boolean().required().messages({
-    "boolean.base": "Show result must be a boolean",
-    "any.required": "Show result is required",
   }),
 });

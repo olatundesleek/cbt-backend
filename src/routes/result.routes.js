@@ -4,13 +4,14 @@ import { authorizeRoles } from "../middleware/role.middleware.js";
 import {
   validateBody,
   validateParams,
-  // validateQuery,
+  validateQuery,
 } from "../middleware/validate.middleware.js";
 import * as resultController from "../controllers/result.controller.js";
 import {
   getSessionResultSchema,
   getTestResultsSchema,
   getAllResultsSchema,
+  toggleResultReleaseParamSchema,
   getStudentCourseResultsSchema,
   toggleResultReleaseSchema,
 } from "../validators/result.validator.js";
@@ -60,7 +61,7 @@ router.get(
   "/student/courses",
   authenticate,
   authorizeRoles("STUDENT"),
-  // validateQuery(getStudentCourseResultsSchema),
+  validateQuery(getStudentCourseResultsSchema),
   resultController.getStudentCourseResults
 );
 
@@ -78,7 +79,7 @@ router.patch(
   "/test/:testId/release",
   authenticate,
   authorizeRoles("ADMIN"),
-  validateParams(toggleResultReleaseSchema),
+  validateParams(toggleResultReleaseParamSchema),
   validateBody(toggleResultReleaseSchema),
   resultController.toggleResultRelease
 );
