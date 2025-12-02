@@ -3,13 +3,17 @@ import ExcelJS from "exceljs";
 import pdf from "html-pdf-node";
 // Helper function to check if user can view results
 function canViewResults(session, user, test) {
-  // For TEST type, results are always visible after completion
-  if (test.type === "TEST" && session.status === "COMPLETED") {
-    return true;
-  }
+  const type = test.type.toUpperCase();
 
+  // for test type
+  if (type === "TEST") {
+    // Must be completed first
+    if (session.status !== "COMPLETED") {
+      return false;
+    }
+  }
   // For EXAM type
-  if (test.type === "EXAM") {
+  if (type === "EXAM") {
     // Must be completed first
     if (session.status !== "COMPLETED") {
       return false;
@@ -71,46 +75,85 @@ export async function getSessionResult(sessionId, user) {
   const session = await prisma.testSession.findUnique({
     where: { id: parseInt(sessionId) },
     include: {
-      test: true,
-      student: {
-        select: {
-          id: true,
-          firstname: true,
-          lastname: true,
-          class: true,
+      test: {
+        include: {
+          teacher: true, // who created the test
+          course: true,
         },
       },
-      answers: {
-        include: { question: true },
+      student: {
+        select: { id: true, firstname: true, lastname: true, class: true },
       },
     },
   });
 
   if (!session) throw new Error("Session not found");
 
-  // Check authorization
+  // Exclude Practice results
+  if (session.test.type.toUpperCase() === "PRACTICE") {
+    throw new Error("Practice results are not viewable");
+  }
+
+  // Authorization checks
   if (user.role === "STUDENT" && session.studentId !== user.id) {
     throw new Error("Not authorized to view this result");
   }
 
   if (user.role === "TEACHER") {
     const authorized = await prisma.course.findFirst({
-      where: {
-        id: session.test.courseId,
-        teacherId: user.id,
-      },
+      where: { id: session.test.courseId, teacherId: user.id },
     });
     if (!authorized) throw new Error("Not authorized to view this result");
   }
 
-  const canView = canViewResults(session, user, session.test);
-  const response = {
+  // Determine score and status
+  let score = session.score;
+  let status;
+
+  if (user.role === "ADMIN") {
+    // Admin can view everything
+    if (session.status === "IN_PROGRESS") {
+      status = "IN_PROGRESS";
+      score = "IN_PROGRESS";
+    } else if (session.status === "COMPLETED") {
+      const numericScore = Number(score);
+      const numericPassMark = Number(session.test.passMark);
+      status = isNaN(numericScore)
+        ? "ungraded"
+        : numericScore >= numericPassMark
+        ? "PASSED"
+        : "FAILED";
+    } else {
+      status = session.status;
+    }
+  } else {
+    // Students and teachers: show unreleased if showResult = false
+    if (session.status === "IN_PROGRESS") {
+      status = "IN_PROGRESS";
+      score = "IN_PROGRESS";
+    } else if (!session.test.showResult) {
+      status = "unreleased";
+      score = "unreleased";
+    } else if (session.status === "COMPLETED") {
+      const numericScore = Number(score);
+      const numericPassMark = Number(session.test.passMark);
+      status = isNaN(numericScore)
+        ? "ungraded"
+        : numericScore >= numericPassMark
+        ? "PASSED"
+        : "FAILED";
+    } else {
+      status = session.status;
+    }
+  }
+
+  return {
     session: {
       id: session.id,
       startedAt: session.startedAt,
       endedAt: session.endedAt,
-      score: session.score,
-      status: session.status,
+      score,
+      status,
     },
     student: session.student,
     test: {
@@ -118,12 +161,16 @@ export async function getSessionResult(sessionId, user) {
       title: session.test.title,
       type: session.test.type,
       showResult: session.test.showResult,
+      createdBy: session.test.teacher
+        ? {
+            id: session.test.teacher.id,
+            name: `${session.test.teacher.firstname} ${session.test.teacher.lastname}`,
+          }
+        : null,
+      passMark: session.test.passMark,
     },
-    answers: canView ? session.answers : null,
-    canViewAnswers: canView,
+    course: session.test.course,
   };
-
-  return response;
 }
 
 export async function getTestResults(testId, user, options = {}) {
@@ -261,56 +308,58 @@ export async function getAllResults(user, filters = {}) {
       student: {
         select: { id: true, firstname: true, lastname: true, class: true },
       },
-      // answers intentionally not included
     },
     orderBy,
     skip: (page - 1) * limit,
     take: limit,
   });
 
-  // Map sessions with role-aware visibility and PASSED/FAILED
-  const mappedSessions = sessions.map((session) => {
-    const canView = canViewResults(session, user, session.test);
+  // === Map sessions according to rules ===
+  const mappedSessions = sessions
+    .filter((session) => session.test.type.toUpperCase() !== "PRACTICE") // exclude practice
+    .map((session) => {
+      const type = session.test.type.toUpperCase();
+      const inProgress = session.status === "IN_PROGRESS";
+      const showResult = session.test.showResult;
 
-    // Compute status
-    let status;
-    let score = canView ? session.score : null;
+      let score = session.score;
+      let status;
 
-    if (session.status === "IN_PROGRESS") {
-      status = "IN_PROGRESS";
-      score = "IN_PROGRESS";
-    } else if (!canView) {
-      status = "unreleased";
-      score = "unreleased";
-    } else if (session.status === "COMPLETED") {
-      const numericScore = Number(session.score);
-      const numericPassMark = Number(session.test.passMark);
-      status = isNaN(numericScore)
-        ? "ungraded"
-        : numericScore >= numericPassMark
-        ? "PASSED"
-        : "FAILED";
-    } else {
-      status = session.status;
-    }
+      if (inProgress) {
+        status = "IN_PROGRESS";
+        score = "IN_PROGRESS";
+      } else if (!showResult) {
+        status = "unreleased";
+        score = "unreleased";
+      } else if (session.status === "COMPLETED") {
+        const numericScore = Number(score);
+        const numericPassMark = Number(session.test.passMark);
+        if (isNaN(numericScore)) {
+          status = "ungraded";
+        } else {
+          status = numericScore >= numericPassMark ? "PASSED" : "FAILED";
+        }
+      } else {
+        status = session.status;
+      }
 
-    return {
-      id: session.test.id,
-      title: session.test.title,
-      type: session.test.type,
-      session: {
-        id: session.id,
-        score,
-        status,
-        startedAt: session.startedAt,
-        endedAt: session.endedAt,
-      },
-      student: session.student,
-      course: session.test.course,
-    };
-  });
+      return {
+        id: session.test.id,
+        title: session.test.title,
+        type: session.test.type,
+        session: {
+          id: session.id,
+          score,
+          status,
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+        },
+        student: session.student,
+        course: session.test.course,
+      };
+    });
 
-  // Group sessions by course
+  // === Group by course ===
   const resultsByCourse = {};
   mappedSessions.forEach((t) => {
     const courseIdKey = t.course.id;
@@ -323,7 +372,6 @@ export async function getAllResults(user, filters = {}) {
     resultsByCourse[courseIdKey].tests.push(t);
   });
 
-  // Compute per-course stats
   const courses = Object.values(resultsByCourse).map((c) => {
     const numericScores = c.tests
       .map((t) =>
@@ -344,7 +392,6 @@ export async function getAllResults(user, filters = {}) {
     };
   });
 
-  // Compute overall stats
   const allNumericScores = mappedSessions
     .map((s) => (typeof s.session.score === "number" ? s.session.score : null))
     .filter((s) => s !== null);
@@ -378,8 +425,6 @@ export async function getStudentCourseResults(user, options = {}) {
 
   const { courseId, startDate, endDate, testLimit, testType = "ALL" } = options;
 
-  console.log("limit is:", testLimit);
-
   // === Fetch student with class info ===
   const student = await prisma.user.findUnique({
     where: { id: user.id },
@@ -388,21 +433,16 @@ export async function getStudentCourseResults(user, options = {}) {
       firstname: true,
       lastname: true,
       username: true,
-      // role: true,
       class: {
         select: {
           id: true,
           className: true,
-
-          courses: true,
         },
       },
     },
   });
 
-  if (!student.class) {
-    throw new Error("Student not assigned to any class");
-  }
+  if (!student.class) throw new Error("Student not assigned to any class");
 
   // === Fetch all sessions with filters ===
   const sessions = await prisma.testSession.findMany({
@@ -410,7 +450,7 @@ export async function getStudentCourseResults(user, options = {}) {
       studentId: user.id,
       test: {
         ...(courseId && { courseId: parseInt(courseId) }),
-        ...(testType !== "ALL" && { type: testType }),
+        ...(testType !== "ALL" && { type: testType.toUpperCase() }),
         ...(startDate && { startTime: { gte: new Date(startDate) } }),
         ...(endDate && { endTime: { lte: new Date(endDate) } }),
       },
@@ -422,17 +462,42 @@ export async function getStudentCourseResults(user, options = {}) {
     },
   });
 
+  if (!sessions.length) {
+    return {
+      student: {
+        id: student.id,
+        name: `${student.firstname} ${student.lastname}`,
+        class: { id: student.class.id, className: student.class.className },
+      },
+      courses: [],
+      overallStats: {
+        totalCourses: 0,
+        totalTests: 0,
+        testsCompleted: 0,
+        averageScore: 0,
+      },
+    };
+  }
+
+  // === Helper to determine if session is hidden ===
+  const isHiddenSession = (session) => {
+    const type = session.test.type.toUpperCase();
+    if (type === "PRACTICE") return true; // Always hide practice
+    if ((type === "TEST" || type === "EXAM") && !session.test.showResult)
+      return true;
+    return false;
+  };
+
   // === Group sessions by course ===
   const resultsByCourse = {};
   sessions.forEach((session) => {
     const cId = session.test.course.id;
-    if (!resultsByCourse[cId]) {
+    if (!resultsByCourse[cId])
       resultsByCourse[cId] = { course: session.test.course, sessions: [] };
-    }
     resultsByCourse[cId].sessions.push(session);
   });
 
-  // === Prepare final results per course ===
+  // === Build course results ===
   const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
     const sortedSessions = [...sessions].sort(
       (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
@@ -442,84 +507,58 @@ export async function getStudentCourseResults(user, options = {}) {
       ? sortedSessions.slice(0, testLimit)
       : sortedSessions;
 
-    // === Stats: exclude hidden exams (showResult=false) ===
-    const totalTests = sessions.length;
+    // Stats: total tests & completed tests (exclude practice)
+    const totalTests = sessions.filter(
+      (s) => s.test.type.toUpperCase() !== "PRACTICE"
+    ).length;
+    const completedTests = sessions.filter(
+      (s) =>
+        s.test.type.toUpperCase() !== "PRACTICE" && s.status === "COMPLETED"
+    ).length;
 
-    const completedTests = sessions.filter((s) => {
-      const normalizedType = s.test.type.toUpperCase();
-      const isHiddenExam = normalizedType === "EXAM" && !s.test.showResult;
-      const isInProgress = s.status === "IN_PROGRESS";
-      if (isHiddenExam || isInProgress) return false;
-      return s.status?.toUpperCase() === "COMPLETED";
-    }).length;
-
-    const visibleScores = limitedSessions
-      .filter((s) => {
-        const normalizedType = s.test.type.toUpperCase();
-        const isHiddenExam = normalizedType === "EXAM" && !s.test.showResult;
-        const isInProgress = s.status === "IN_PROGRESS";
-        return !isHiddenExam && !isInProgress;
-      })
+    // Scores for average calculation (only completed, visible)
+    const gradedScores = limitedSessions
+      .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
       .map((s) => Number(s.score) || 0);
 
-    const averageScore =
-      visibleScores.length > 0
-        ? visibleScores.reduce((a, b) => a + b, 0) / visibleScores.length
-        : 0;
+    const averageScore = gradedScores.length
+      ? gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length
+      : 0;
 
-    // === Build test results ===
-    const testResults = limitedSessions.map((session) => {
-      const normalizedType = session.test.type.toUpperCase();
-      const isHiddenExam =
-        normalizedType === "EXAM" && !session.test.showResult;
-      const isInProgress = session.status === "IN_PROGRESS";
+    // Map test results
+    const testResults = limitedSessions
+      .filter((s) => s.test.type.toUpperCase() !== "PRACTICE") // never return practice
+      .map((session) => {
+        const type = session.test.type.toUpperCase();
+        const inProgress = session.status === "IN_PROGRESS";
+        const hidden = isHiddenSession(session);
 
-      //  Force unreleased if exam hidden OR test/exam in progress
-      if (isHiddenExam || isInProgress) {
+        let score = session.score;
+        let status = session.status;
+
+        if (hidden || inProgress) {
+          score = "unreleased";
+          status = inProgress ? "IN_PROGRESS" : "unreleased";
+        } else if (session.status === "COMPLETED") {
+          const numericScore = Number(session.score);
+          const passMark = Number(session.test.passMark);
+          if (isNaN(numericScore)) status = "ungraded";
+          else status = numericScore >= passMark ? "PASSED" : "FAILED";
+        }
+
         return {
           id: session.test.id,
           title: session.test.title,
           type: session.test.type,
           session: {
             id: session.id,
-            score: "unreleased",
-            status: isInProgress ? "IN_PROGRESS" : "unreleased",
+            score,
+            status,
             startedAt: session.startedAt,
             endedAt: session.endedAt,
           },
         };
-      }
-
-      //  Completed visible test/exam
-      let score = session.score ?? null;
-      let status;
-
-      if (session.status?.toUpperCase() === "COMPLETED") {
-        const numericScore = Number(score);
-        const numericPassMark = Number(session.test.passMark);
-
-        if (isNaN(numericScore)) {
-          status = "ungraded";
-        } else {
-          status = numericScore >= numericPassMark ? "PASSED" : "FAILED";
-        }
-      } else {
-        status = session.status;
-      }
-
-      return {
-        id: session.test.id,
-        title: session.test.title,
-        type: session.test.type,
-        session: {
-          id: session.id,
-          score,
-          status,
-          startedAt: session.startedAt,
-          endedAt: session.endedAt,
-        },
-      };
-    });
+      });
 
     return {
       course: {
@@ -537,21 +576,17 @@ export async function getStudentCourseResults(user, options = {}) {
     totalCourses: results.length,
     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-    averageScore:
-      results.length > 0
-        ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
-          results.length
-        : 0,
+    averageScore: results.length
+      ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
+        results.length
+      : 0,
   };
 
   return {
     student: {
       id: student.id,
       name: `${student.firstname} ${student.lastname}`,
-      class: {
-        id: student.class.id,
-        className: student.class.className,
-      },
+      class: { id: student.class.id, className: student.class.className },
     },
     courses: results,
     overallStats,
@@ -569,12 +604,6 @@ export async function toggleResultRelease(testId, showResult, user) {
 
   if (!test) {
     throw new Error("Test not found");
-  }
-
-  if (test.type === "TEST") {
-    throw new Error(
-      "Cannot toggle visibility for TEST type - results are always visible"
-    );
   }
 
   const updated = await prisma.test.update({

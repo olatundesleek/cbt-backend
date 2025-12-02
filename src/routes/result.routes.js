@@ -22,7 +22,7 @@ const router = express.Router();
 router.get(
   "/test/:sessionId",
   authenticate,
-  authorizeRoles("ADMIN"),
+  authorizeRoles("ADMIN", "TEACHER"),
   validateParams(getSessionResultSchema),
   resultController.getResult
 );

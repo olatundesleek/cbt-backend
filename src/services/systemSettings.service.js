@@ -12,6 +12,7 @@ export const updateSettingsService = async (data, file) => {
 
     let logoUrl = null;
     let faviconUrl = null;
+    let loginBannerUrl = null;
 
     // Handle Logo
     if (file?.logo) {
@@ -57,6 +58,26 @@ export const updateSettingsService = async (data, file) => {
       }
     }
 
+    // Handle Login Banner
+    if (file?.loginBanner) {
+      const ext = path.extname(file.loginBanner[0].originalname); // get extension
+      const filename = `loginBanner${ext}`;
+      if (process.env.NODE_ENV === "development") {
+        const uploadDir = path.join(process.cwd(), "uploads");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+        const uploadPath = path.join(uploadDir, filename);
+        fs.renameSync(file.loginBanner[0].path, uploadPath); // overwrite
+        loginBannerUrl = `${BASE_URL}/uploads/${filename}`;
+      } else {
+        const uploaded = await uploadToCloudinary(
+          file.loginBanner[0].path,
+          "cbt",
+          "loginBanner"
+        );
+        loginBannerUrl = uploaded.secure_url;
+      }
+    }
+
     // Only keep defined fields
     const {
       appName,
@@ -76,6 +97,7 @@ export const updateSettingsService = async (data, file) => {
       ...(systemStatus !== undefined && { systemStatus }),
       ...(logoUrl && { logoUrl }),
       ...(faviconUrl && { faviconUrl }),
+      ...(loginBannerUrl && { loginBannerUrl }),
     };
 
     return prisma.systemSettings.upsert({
@@ -88,6 +110,7 @@ export const updateSettingsService = async (data, file) => {
         shortName: shortName || null,
         logoUrl: logoUrl || null,
         faviconUrl: faviconUrl || null,
+        loginBannerUrl: loginBannerUrl || null,
         primaryColor: primaryColor || null,
         supportEmail: supportEmail || null,
         systemStatus: systemStatus || "ACTIVE",

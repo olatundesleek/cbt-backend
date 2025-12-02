@@ -16,6 +16,7 @@ enum Role {
 enum TestType {
   TEST
   EXAM
+  PRACTICE
 }
 
 
@@ -33,6 +34,8 @@ model User {
   username     String          @unique
   password     String
   role         Role            @default(STUDENT)
+  email        String?
+  phoneNumber  String?
   classId      Int?
   class        Class?          @relation(fields: [classId], references: [id])
   teacherOf    Class[]         @relation("ClassTeacher")
@@ -186,6 +189,7 @@ model SystemSettings {
 
   logoUrl          String?     // uploaded logo path
   faviconUrl       String?     // uploaded favicon path
+  loginBannerUrl      String?     // uploaded login Banner path
 
   primaryColor     String?     // hex or rgb e.g.
 

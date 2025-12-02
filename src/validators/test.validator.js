@@ -5,8 +5,8 @@ export const createTestSchema = Joi.object({
     "string.empty": "Test title is required",
     "any.required": "Test title is required",
   }),
-  type: Joi.string().valid("TEST", "EXAM").required().messages({
-    "any.only": "Test type must be either TEST or EXAM",
+  type: Joi.string().valid("TEST", "EXAM", "PRACTICE").required().messages({
+    "any.only": "Test type must be either TEST, EXAM or PRACTICE",
     "any.required": "Test type is required",
   }),
   testState: Joi.string()
@@ -54,8 +54,8 @@ export const updateTestSchema = Joi.object({
   title: Joi.string().messages({
     "string.empty": "Test title cannot be empty",
   }),
-  type: Joi.string().valid("TEST", "EXAM").messages({
-    "any.only": "Test type must be either TEST or EXAM",
+  type: Joi.string().valid("TEST", "EXAM", "PRACTICE").messages({
+    "any.only": "Test type must be either TEST, EXAM or PRACTICE",
   }),
   testState: Joi.string()
     .valid("active", "inactive", "scheduled", "completed")
