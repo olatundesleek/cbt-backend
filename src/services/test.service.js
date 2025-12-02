@@ -82,6 +82,23 @@ export const createTest = async (data, user) => {
     throw error;
   }
 
+  // if userRole is TEACHER and status is being set to 'active', prevent it
+  if (user.role === "TEACHER" && data.testState === "active") {
+    const error = new Error("Unable to update test");
+    error.details =
+      "You don't have permission to activate the test, kindly schedule it instead";
+    throw error;
+  }
+
+  // if userRole is TEACHER and status is being changed to 'completed', prevent it
+
+  if (user.role === "TEACHER" && data.testState === "completed") {
+    const error = new Error("Unable to update test");
+    error.details =
+      "You don't have permission to complete the test, kindly contact admin";
+    throw error;
+  }
+
   // Create test
   const test = await prisma.test.create({
     data: {
@@ -207,7 +224,28 @@ export const getTestById = async (testId, user) => {
 
 export const updateTest = async (testId, data, user) => {
   if (!(await canAccessTest(testId, user))) {
-    throw new Error("You don't have permission to update this test");
+    const error = new Error("unable to update Test");
+    error.details = "You don't have permission to update this test";
+    throw error;
+  }
+
+  // Fetch current test
+  const existingTest = await prisma.test.findUnique({
+    where: { id: parseInt(testId) },
+  });
+
+  if (!existingTest) {
+    const error = new Error("Test not found");
+    error.details = "unable to update Test";
+    throw error;
+  }
+
+  // Prevent teachers from updating active tests
+  if (user.role === "TEACHER" && existingTest.testState === "active") {
+    const error = new Error("Unable to update test");
+    error.details =
+      "You cannot update an active test. Contact admin if changes are required.";
+    throw error;
   }
 
   // Check course if courseId is updated
@@ -435,6 +473,20 @@ export const deleteTest = async (testId, user) => {
   try {
     if (!(await canAccessTest(testId, user))) {
       throw new Error("You don't have permission to delete this test");
+    }
+
+    // you cannot delete an active test if your role is TEACHER
+
+    // if userRole is TEACHER and status is being changed to 'completed', prevent it
+
+    if (
+      (user.role === "TEACHER" && data.testState === "active") ||
+      data.testState === "completed"
+    ) {
+      const error = new Error("Unable to delete test");
+      error.details =
+        "You don't have permission to delete an active or completed test, kindly contact admin";
+      throw error;
     }
 
     await prisma.test.delete({

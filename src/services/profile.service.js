@@ -10,6 +10,8 @@ export const getProfile = async (userId) => {
       lastname: true,
       username: true,
       role: true,
+      email: true,
+      phoneNumber: true,
       class: true, // Include class details if student
       teacherOf: {
         select: {
@@ -43,6 +45,8 @@ export const updateProfile = async (userId, updates) => {
       firstname: true,
       lastname: true,
       username: true,
+      email: true,
+      phoneNumber: true,
       role: true,
       class: true,
       teacherOf: {

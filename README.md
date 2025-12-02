@@ -1263,6 +1263,7 @@ GET /api/profile
     "lastname": "Doe",
     "username": "johnny",
     "email": "john@example.com",
+    "phoneNumber": "387878343",
     "role": "student"
   }
 }
@@ -1282,7 +1283,9 @@ PATCH /api/profile
 {
   "firstname": "Olatunde",
   "lastname": "Sleek",
-  "username": "sleek01"
+  "username": "sleek01",
+  "email": "test@test.com",
+  "phoneNumber": "38783733"
 }
 ```
 

@@ -12,11 +12,13 @@ export async function getProfile(req, res, next) {
 
 export async function updateProfile(req, res, next) {
   try {
-    const { firstname, lastname, username } = req.body;
+    const { firstname, lastname, username, email, phoneNumber } = req.body;
     const updated = await profileService.updateProfile(req.user.id, {
       firstname,
       lastname,
       username,
+      email,
+      phoneNumber,
     });
     return success(res, "Profile updated successfully", updated);
   } catch (err) {

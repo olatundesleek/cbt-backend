@@ -15,6 +15,7 @@ const storage = multer.diskStorage({
 
     if (file.fieldname === "logo") name = `logo${ext}`;
     if (file.fieldname === "favicon") name = `favicon${ext}`;
+    if (file.fieldname === "loginBanner") name = `loginBanner${ext}`;
 
     cb(null, name); // always overwrite
   },

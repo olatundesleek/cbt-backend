@@ -20,6 +20,7 @@ router.patch(
   upload.fields([
     { name: "logo", maxCount: 1 },
     { name: "favicon", maxCount: 1 },
+    { name: "loginBanner", maxCount: 1 },
   ]),
   validateBody(updateSystemSettingsSchema),
   updateSystemSettings

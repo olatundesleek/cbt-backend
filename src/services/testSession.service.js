@@ -561,7 +561,7 @@ export async function finishSession({ sessionId, studentId }) {
 
   // Already completed session
   if (session.endedAt || session.status === "COMPLETED") {
-    if (session.test.type === "TEST") {
+    if (session.test.type === "PRACTICE") {
       const formattedAnswers = formatTestAnswers(session.answers);
       const score = computeScore(session.answers);
       return {
@@ -577,7 +577,7 @@ export async function finishSession({ sessionId, studentId }) {
       };
     }
 
-    // EXAM → minimal info only
+    // EXAM / TEST → minimal info only
     return {
       id: session.id,
       testId: session.testId,
@@ -611,7 +611,7 @@ export async function finishSession({ sessionId, studentId }) {
   }
 
   // Return based on test type
-  if (session.test.type === "TEST") {
+  if (session.test.type === "PRACTICE") {
     const formattedAnswers = formatTestAnswers(session.answers);
     return {
       ...updated,
@@ -620,7 +620,7 @@ export async function finishSession({ sessionId, studentId }) {
     };
   }
 
-  // EXAM → minimal info only
+  // EXAM/ TEST → minimal info only
   return {
     id: updated.id,
     testId: updated.testId,
