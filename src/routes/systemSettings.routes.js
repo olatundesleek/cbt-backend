@@ -11,7 +11,7 @@ import { upload } from "../utils/mutler.js";
 
 const router = express.Router();
 
-router.get("/", authenticate, authorizeRoles("ADMIN"), getSystemSettings);
+router.get("/", getSystemSettings);
 
 router.patch(
   "/",
