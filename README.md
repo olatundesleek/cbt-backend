@@ -270,6 +270,13 @@ Response:
 GET /api/classes
 \`\`\`
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 Response:
 
 ```json
@@ -289,7 +296,13 @@ Response:
         "students": 25
       }
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 20,
+    "pages": 2
+  }
 }
 ```
 
@@ -347,6 +360,13 @@ GET /api/teachers
 
 Fetch all teachers in the system. Accessible only by users with the ADMIN role.
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 **Response:**
 
 ```json
@@ -370,7 +390,13 @@ Fetch all teachers in the system. Accessible only by users with the ADMIN role.
       "role": "TEACHER",
       "createdAt": "2025-10-30T11:00:00.000Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "pages": 3
+  }
 }
 ```
 
@@ -499,6 +525,13 @@ Response:
 GET /api/courses
 \`\`\`
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 Response:
 
 ```json
@@ -520,7 +553,13 @@ Response:
         "classes": 3
       }
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 12,
+    "pages": 2
+  }
 }
 ```
 
@@ -684,6 +723,13 @@ Delete an existing test. Accessible by the test's creator (teacher) or an ADMIN.
 GET /api/tests
 \`\`\`
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 Response (Teacher):
 
 ```json
@@ -711,7 +757,13 @@ Response (Teacher):
         "sessions": 25
       }
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 15,
+    "pages": 2
+  }
 }
 ```
 
@@ -818,6 +870,13 @@ POST /api/question-banks
 GET /api/question-banks
 ```
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 **Response**
 
 ```json
@@ -836,7 +895,13 @@ GET /api/question-banks
         "questions": 50
       }
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 8,
+    "pages": 1
+  }
 }
 ```
 
@@ -1343,6 +1408,13 @@ GET /api/students
 **Auth:** Required (Bearer token)
 **Roles:** ADMIN → all students, TEACHER → students in teacher's classes
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 **Response**
 
 ```json
@@ -1361,7 +1433,13 @@ GET /api/students
         "name": "JSS1"
       }
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 50,
+    "pages": 5
+  }
 }
 ```
 
@@ -1897,6 +1975,13 @@ Retrieve aggregated and detailed results for a student across their courses.
 **Endpoint:** `GET /api/notification`
 **Access:** Any authenticated user
 
+**Query Parameters:**
+
+- `page` (integer, optional) - Page number for pagination. Default: `1`
+- `limit` (integer, optional) - Number of records per page. Default: `10`
+- `sort` (string, optional) - Field to sort by. Default: `createdAt`
+- `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
+
 **Response Example (Admin sees all):**
 
 ```json
@@ -1924,7 +2009,13 @@ Retrieve aggregated and detailed results for a student across their courses.
       "createdById": 1,
       "createdAt": "2025-11-19T11:00:00.000Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 45,
+    "pages": 5
+  }
 }
 ```
 
@@ -1955,13 +2046,19 @@ Retrieve aggregated and detailed results for a student across their courses.
       "createdById": 1,
       "createdAt": "2025-11-19T12:00:00.000Z"
     }
-  ]
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 20,
+    "pages": 2
+  }
 }
 ```
 
 # System Settings API Documentation
 
-This API allows administrators to retrieve and update system settings for the CBT platform. It supports file uploads (logo & favicon) and saves them to Cloudinary.
+This API allows administrators to retrieve and update system settings for the CBT platform. It supports file uploads (logo, favicon, loginBanner) and saves them to Cloudinary or local storage.
 
 ---
 
@@ -1990,8 +2087,148 @@ This API allows administrators to retrieve and update system settings for the CB
     "supportEmail": "support@florintech.com",
     "systemStatus": "ACTIVE",
     "logoUrl": "https://res.cloudinary.com/.../cbt/logo.png",
-    "faviconUrl": "https://res.cloudinary.com/.../cbt/favicon.png"
+    "faviconUrl": "https://res.cloudinary.com/.../cbt/favicon.png",
+    "loginBannerUrl": "https://res.cloudinary.com/.../cbt/loginBanner.png"
   }
+}
+```
+
+---
+
+# 🔹 PATCH — Update System Settings
+
+**Endpoint:**
+`PATCH /api/system-settings`
+
+**Auth:** Required (Admin role only)
+
+### Request Body (multipart/form-data)
+
+**Text Fields:**
+
+```json
+{
+  "appName": "New App Name",
+  "institutionName": "New Institution",
+  "shortName": "NI",
+  "primaryColor": "#ff0000",
+  "supportEmail": "newemail@example.com",
+  "systemStatus": "ACTIVE"
+}
+```
+
+**File Fields:**
+
+- `logo` (optional) - Image file for logo
+- `favicon` (optional) - Image file for favicon
+- `loginBanner` (optional) - Image file for login banner
+
+### Image Operations
+
+**1. Update with new image:**
+Upload the image file with field name `logo`, `favicon`, or `loginBanner`
+
+**2. Clear an image (set to null):**
+Send in JSON body:
+
+```json
+{
+  "logo": null,
+  "favicon": null,
+  "loginBanner": null
+}
+```
+
+**3. Keep existing image:**
+Don't include the field in the request
+
+### Example Requests
+
+**Update app name and upload new logo:**
+
+```
+POST /api/system-settings
+Content-Type: multipart/form-data
+
+appName=New App Name
+logo=[image file]
+```
+
+**Clear logo (set to null):**
+
+```
+PATCH /api/system-settings
+Content-Type: application/json
+
+{
+  "logo": null
+}
+```
+
+**Update institution name without touching images:**
+
+```
+PATCH /api/system-settings
+Content-Type: application/json
+
+{
+  "institutionName": "New Institution Name"
+}
+```
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "System settings updated successfully",
+  "data": {
+    "id": 1,
+    "appName": "New App Name",
+    "institutionName": "New Institution",
+    "shortName": "NI",
+    "primaryColor": "#ff0000",
+    "supportEmail": "newemail@example.com",
+    "systemStatus": "ACTIVE",
+    "logoUrl": "https://res.cloudinary.com/.../cbt/logo.png",
+    "faviconUrl": null,
+    "loginBannerUrl": "https://res.cloudinary.com/.../cbt/loginBanner.png",
+    "createdAt": "2025-11-01T10:00:00Z",
+    "updatedAt": "2025-12-05T15:30:00Z"
+  }
+}
+```
+
+### Validation Rules
+
+- `appName` - string, min 2, max 200 characters
+- `institutionName` - string, min 2, max 200 characters
+- `shortName` - string, max 50 characters
+- `primaryColor` - string (hex color code)
+- `supportEmail` - valid email format
+- `systemStatus` - "ACTIVE" or "MAINTENANCE"
+- `logo`, `favicon`, `loginBanner` - Image file (MIME type starting with `image/`) or `null`
+
+### Error Responses
+
+**Invalid image file:**
+
+```json
+{
+  "success": false,
+  "message": "Validation Error",
+  "error": {
+    "details": ["logo must be an image file or null"]
+  }
+}
+```
+
+**Unauthorized:**
+
+```json
+{
+  "success": false,
+  "message": "You are not authorized to perform this action"
 }
 ```
 

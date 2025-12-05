@@ -7,4 +7,31 @@ export const updateSystemSettingsSchema = Joi.object({
   primaryColor: Joi.string().optional(),
   supportEmail: Joi.string().email().optional(),
   systemStatus: Joi.string().valid("ACTIVE", "MAINTENANCE").optional(),
+  logo: Joi.alternatives()
+    .try(
+      Joi.object({
+        mimetype: Joi.string().pattern(/^image\//),
+        originalname: Joi.string(),
+      }).unknown(true)
+    )
+    .try(Joi.valid(null))
+    .optional(),
+  favicon: Joi.alternatives()
+    .try(
+      Joi.object({
+        mimetype: Joi.string().pattern(/^image\//),
+        originalname: Joi.string(),
+      }).unknown(true)
+    )
+    .try(Joi.valid(null))
+    .optional(),
+  loginBanner: Joi.alternatives()
+    .try(
+      Joi.object({
+        mimetype: Joi.string().pattern(/^image\//),
+        originalname: Joi.string(),
+      }).unknown(true)
+    )
+    .try(Joi.valid(null))
+    .optional(),
 });

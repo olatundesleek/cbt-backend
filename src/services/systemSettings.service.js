@@ -10,12 +10,17 @@ export const updateSettingsService = async (data, file) => {
         ? `http://localhost:${process.env.PORT || 4000}`
         : "";
 
-    let logoUrl = null;
-    let faviconUrl = null;
-    let loginBannerUrl = null;
+    let logoUrl = undefined;
+    let faviconUrl = undefined;
+    let loginBannerUrl = undefined;
 
     // Handle Logo
-    if (file?.logo) {
+    // Case 1: data.logo is null (explicit clear) -> set to null
+    if (data.logo === null) {
+      logoUrl = null;
+    }
+    // Case 2: file?.logo exists (new image) -> upload and use URL
+    else if (file?.logo) {
       const ext = path.extname(file.logo[0].originalname); // get extension
       const filename = `logo${ext}`;
 
@@ -35,9 +40,15 @@ export const updateSettingsService = async (data, file) => {
         logoUrl = uploaded.secure_url;
       }
     }
+    // Case 3: neither -> leave undefined (don't update)
 
     // Handle Favicon
-    if (file?.favicon) {
+    // Case 1: data.favicon is null (explicit clear) -> set to null
+    if (data.favicon === null) {
+      faviconUrl = null;
+    }
+    // Case 2: file?.favicon exists (new image) -> upload and use URL
+    else if (file?.favicon) {
       const ext = path.extname(file.favicon[0].originalname);
       const filename = `favicon${ext}`;
 
@@ -57,9 +68,15 @@ export const updateSettingsService = async (data, file) => {
         faviconUrl = uploaded.secure_url;
       }
     }
+    // Case 3: neither -> leave undefined (don't update)
 
     // Handle Login Banner
-    if (file?.loginBanner) {
+    // Case 1: data.loginBanner is null (explicit clear) -> set to null
+    if (data.loginBanner === null) {
+      loginBannerUrl = null;
+    }
+    // Case 2: file?.loginBanner exists (new image) -> upload and use URL
+    else if (file?.loginBanner) {
       const ext = path.extname(file.loginBanner[0].originalname); // get extension
       const filename = `loginBanner${ext}`;
       if (process.env.NODE_ENV === "development") {
@@ -77,6 +94,7 @@ export const updateSettingsService = async (data, file) => {
         loginBannerUrl = uploaded.secure_url;
       }
     }
+    // Case 3: neither -> leave undefined (don't update)
 
     // Only keep defined fields
     const {
@@ -95,9 +113,9 @@ export const updateSettingsService = async (data, file) => {
       ...(primaryColor !== undefined && { primaryColor }),
       ...(supportEmail !== undefined && { supportEmail }),
       ...(systemStatus !== undefined && { systemStatus }),
-      ...(logoUrl && { logoUrl }),
-      ...(faviconUrl && { faviconUrl }),
-      ...(loginBannerUrl && { loginBannerUrl }),
+      ...(logoUrl !== undefined && { logoUrl }),
+      ...(faviconUrl !== undefined && { faviconUrl }),
+      ...(loginBannerUrl !== undefined && { loginBannerUrl }),
     };
 
     return prisma.systemSettings.upsert({

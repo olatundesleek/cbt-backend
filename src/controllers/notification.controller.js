@@ -39,7 +39,17 @@ export const deleteNotificationController = async (req, res, next) => {
 
 export const getNotificationsController = async (req, res, next) => {
   try {
-    const notifications = await getNotificationsForUser(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const notifications = await getNotificationsForUser(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     success(res, "Notifications fetched successfully", notifications);
   } catch (err) {
     next(err);

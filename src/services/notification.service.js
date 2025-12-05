@@ -17,13 +17,33 @@ export const deleteNotification = async (id) => {
   return await prisma.notification.delete({ where: { id } });
 };
 
-export const getNotificationsForUser = async (user) => {
+export const getNotificationsForUser = async (user, options = {}) => {
+  const page = options.page || 1;
+  const limit = options.limit || 10;
+  const sort = options.sort || "createdAt";
+  const order = options.order || "desc";
+
+  const skip = (page - 1) * limit;
   const role = user.role;
 
   if (role === "ADMIN") {
-    return await prisma.notification.findMany({
-      orderBy: { createdAt: "desc" },
+    const data = await prisma.notification.findMany({
+      skip,
+      take: limit,
+      orderBy: { [sort]: order },
     });
+
+    const total = await prisma.notification.count();
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 
   const conditions = [{ type: "GENERAL" }];
@@ -47,8 +67,24 @@ export const getNotificationsForUser = async (user) => {
     });
   }
 
-  return await prisma.notification.findMany({
+  const data = await prisma.notification.findMany({
     where: { OR: conditions },
-    orderBy: { createdAt: "desc" },
+    skip,
+    take: limit,
+    orderBy: { [sort]: order },
   });
+
+  const total = await prisma.notification.count({
+    where: { OR: conditions },
+  });
+
+  return {
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  };
 };

@@ -56,7 +56,14 @@ export const createQuestionBank = async (data) => {
   }
 };
 
-export const getQuestionBanks = async (user) => {
+export const getQuestionBanks = async (user, options = {}) => {
+  const page = options.page || 1;
+  const limit = options.limit || 10;
+  const sort = options.sort || "createdAt";
+  const order = options.order || "desc";
+
+  const skip = (page - 1) * limit;
+
   const where = {};
 
   // If not admin, only show own banks
@@ -85,12 +92,24 @@ export const getQuestionBanks = async (user) => {
         },
       },
     },
+    skip,
+    take: limit,
     orderBy: {
-      createdAt: "desc",
+      [sort]: order,
     },
   });
 
-  return banks;
+  const total = await prisma.questionBank.count({ where });
+
+  return {
+    data: banks,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  };
 };
 
 export const getQuestionBankById = async (bankId, user) => {

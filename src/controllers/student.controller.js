@@ -3,7 +3,17 @@ import { success } from "../utils/response.js";
 
 export async function getStudents(req, res, next) {
   try {
-    const users = await studentService.getStudents(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const users = await studentService.getStudents(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     return success(res, "Students fetched successfully", users);
   } catch (err) {
     next(err);
