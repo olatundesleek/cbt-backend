@@ -20,7 +20,17 @@ export async function createQuestionBank(req, res, next) {
 
 export async function getQuestionBanks(req, res, next) {
   try {
-    const banks = await questionBankService.getQuestionBanks(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const banks = await questionBankService.getQuestionBanks(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     return success(res, "Question banks fetched successfully", banks);
   } catch (err) {
     next(err);

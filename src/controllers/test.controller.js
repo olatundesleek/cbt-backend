@@ -34,7 +34,17 @@ export async function updateTest(req, res, next) {
 
 export async function getTests(req, res, next) {
   try {
-    const tests = await testService.getTests(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const tests = await testService.getTests(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     return success(res, "Tests fetched successfully", tests);
   } catch (err) {
     next(err);

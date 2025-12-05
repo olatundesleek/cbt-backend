@@ -44,7 +44,17 @@ export async function deleteCourse(req, res, next) {
 
 export async function getCourses(req, res) {
   try {
-    const courses = await courseService.getCoursesForUser(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const courses = await courseService.getCoursesForUser(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     res.json(courses);
   } catch (err) {
     res.status(400).json({ error: err.message });

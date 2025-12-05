@@ -3,7 +3,17 @@ import { success } from "../utils/response.js";
 
 export async function getTeachers(req, res, next) {
   try {
-    const users = await teacherService.getTeachers(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const users = await teacherService.getTeachers(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     return success(res, "Teachers fetched successfully", users);
   } catch (err) {
     next(err);

@@ -302,9 +302,16 @@ export const updateTest = async (testId, data, user) => {
   return test;
 };
 
-export const getTests = async (user) => {
+export const getTests = async (user, options = {}) => {
+  const page = options.page || 1;
+  const limit = options.limit || 10;
+  const sort = options.sort || "createdAt";
+  const order = options.order || "desc";
+
+  const skip = (page - 1) * limit;
+
   switch (user.role) {
-    case "ADMIN":
+    case "ADMIN": {
       const allTest = await prisma.test.findMany({
         include: {
           teacher: {
@@ -337,12 +344,16 @@ export const getTests = async (user) => {
             },
           },
         },
+        skip,
+        take: limit,
         orderBy: {
-          createdAt: "desc",
+          [sort]: order,
         },
       });
 
-      return allTest.map((test) => {
+      const total = await prisma.test.count();
+
+      const data = allTest.map((test) => {
         const { teacher, ...safeTest } = test;
 
         return {
@@ -351,8 +362,19 @@ export const getTests = async (user) => {
         };
       });
 
-    case "TEACHER":
-      return prisma.test.findMany({
+      return {
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    }
+
+    case "TEACHER": {
+      const tests = await prisma.test.findMany({
         where: {
           createdBy: user.id,
         },
@@ -388,12 +410,31 @@ export const getTests = async (user) => {
             },
           },
         },
+        skip,
+        take: limit,
         orderBy: {
-          createdAt: "desc",
+          [sort]: order,
         },
       });
 
-    case "STUDENT":
+      const total = await prisma.test.count({
+        where: {
+          createdBy: user.id,
+        },
+      });
+
+      return {
+        data: tests,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    }
+
+    case "STUDENT": {
       if (!user.classId) {
         const error = new Error("Unable to fetch tests");
         error.details = "You are not assigned to any class";
@@ -444,13 +485,27 @@ export const getTests = async (user) => {
             },
           },
         },
+        skip,
+        take: limit,
         orderBy: {
-          createdAt: "desc",
+          [sort]: order,
+        },
+      });
+
+      const total = await prisma.test.count({
+        where: {
+          course: {
+            classes: {
+              some: {
+                id: user.classId,
+              },
+            },
+          },
         },
       });
 
       // Map session info into each test if there is an in-progress session
-      return tests.map((test) => {
+      const data = tests.map((test) => {
         const { bankId, showResult, teacher, createdBy, ...safeTest } = test;
 
         const inProgressSession = test.sessions[0]; // will be undefined if no in-progress session
@@ -463,6 +518,17 @@ export const getTests = async (user) => {
             : {}),
         };
       });
+
+      return {
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    }
 
     default:
       throw new Error("Invalid role");

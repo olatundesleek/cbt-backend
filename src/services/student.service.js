@@ -1,25 +1,52 @@
 import prisma from "../config/prisma.js";
 
-export const getStudents = async (user) => {
+export const getStudents = async (user, options = {}) => {
+  const page = options.page || 1;
+  const limit = options.limit || 10;
+  const sort = options.sort || "createdAt";
+  const order = options.order || "desc";
+
+  const skip = (page - 1) * limit;
+
   if (user.role === "ADMIN") {
     // Return all students with their class and courses
-    return prisma.user.findMany({
+    const students = await prisma.user.findMany({
       where: { role: "STUDENT" },
       select: {
         id: true,
         firstname: true,
         lastname: true,
         username: true,
+        createdAt: true,
         class: {
           include: { courses: true },
         },
       },
+      skip,
+      take: limit,
+      orderBy: {
+        [sort]: order,
+      },
     });
+
+    const total = await prisma.user.count({
+      where: { role: "STUDENT" },
+    });
+
+    return {
+      data: students,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 
   if (user.role === "TEACHER") {
     // Return students in classes taught by the teacher
-    return prisma.user.findMany({
+    const students = await prisma.user.findMany({
       where: {
         role: "STUDENT",
         class: { teacherId: user.id },
@@ -29,11 +56,34 @@ export const getStudents = async (user) => {
         firstname: true,
         lastname: true,
         username: true,
+        createdAt: true,
         class: {
           include: { courses: true },
         },
       },
+      skip,
+      take: limit,
+      orderBy: {
+        [sort]: order,
+      },
     });
+
+    const total = await prisma.user.count({
+      where: {
+        role: "STUDENT",
+        class: { teacherId: user.id },
+      },
+    });
+
+    return {
+      data: students,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
   }
 
   throw new Error("Forbidden");

@@ -30,6 +30,9 @@ export const updateSystemSettings = async (req, res, next) => {
       primaryColor,
       supportEmail,
       systemStatus,
+      logo,
+      favicon,
+      loginBanner,
     } = req.body;
 
     const data = {
@@ -39,6 +42,13 @@ export const updateSystemSettings = async (req, res, next) => {
       ...(primaryColor !== undefined && { primaryColor }),
       ...(supportEmail !== undefined && { supportEmail }),
       ...(systemStatus !== undefined && { systemStatus }),
+      ...(logo !== undefined && { logo: logo === "null" ? null : logo }),
+      ...(favicon !== undefined && {
+        favicon: favicon === "null" ? null : favicon,
+      }),
+      ...(loginBanner !== undefined && {
+        loginBanner: loginBanner === "null" ? null : loginBanner,
+      }),
     };
 
     // Pass data and files to service

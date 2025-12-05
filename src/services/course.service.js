@@ -119,27 +119,70 @@ export const deleteCourse = async (courseId) => {
   }
 };
 
-export async function getCoursesForUser(user) {
+export async function getCoursesForUser(user, options = {}) {
   try {
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const sort = options.sort || "createdAt";
+    const order = options.order || "desc";
+
+    const skip = (page - 1) * limit;
+
     if (user.role === "ADMIN") {
-      return prisma.course.findMany({
+      const courses = await prisma.course.findMany({
         include: {
           teacher: { select: { id: true, firstname: true, lastname: true } },
         },
+        skip,
+        take: limit,
+        orderBy: {
+          [sort]: order,
+        },
       });
+
+      const total = await prisma.course.count();
+
+      return {
+        data: courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
     }
 
     if (user.role === "TEACHER") {
-      return prisma.course.findMany({
+      const courses = await prisma.course.findMany({
         where: { teacherId: user.id },
         include: {
           teacher: { select: { id: true, firstname: true, lastname: true } },
         },
+        skip,
+        take: limit,
+        orderBy: {
+          [sort]: order,
+        },
       });
+
+      const total = await prisma.course.count({
+        where: { teacherId: user.id },
+      });
+
+      return {
+        data: courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
     }
 
     if (user.role === "STUDENT") {
-      return prisma.course.findMany({
+      const courses = await prisma.course.findMany({
         where: {
           classes: {
             some: {
@@ -150,7 +193,32 @@ export async function getCoursesForUser(user) {
         include: {
           teacher: { select: { id: true, firstname: true, lastname: true } },
         },
+        skip,
+        take: limit,
+        orderBy: {
+          [sort]: order,
+        },
       });
+
+      const total = await prisma.course.count({
+        where: {
+          classes: {
+            some: {
+              students: { some: { id: user.id } },
+            },
+          },
+        },
+      });
+
+      return {
+        data: courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
     }
 
     throw new Error("Invalid role");

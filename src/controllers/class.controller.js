@@ -17,7 +17,17 @@ export async function createClass(req, res, next) {
 
 export async function getClass(req, res) {
   try {
-    const classes = await classService.getClassesForUser(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sort = req.query.sort || "createdAt";
+    const order = req.query.order || "desc";
+
+    const classes = await classService.getClassesForUser(req.user, {
+      page,
+      limit,
+      sort,
+      order,
+    });
     res.json(classes);
   } catch (err) {
     res.status(400).json({ error: err.message });
