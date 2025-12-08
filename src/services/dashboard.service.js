@@ -165,6 +165,7 @@ export const fetchDashboardData = async (role, userId) => {
         }),
         studentCount: await prisma.user.count({ where: { role: "STUDENT" } }),
         teacherCount: await prisma.user.count({ where: { role: "TEACHER" } }),
+        adminCount: await prisma.user.count({ where: { role: "ADMIN" } }),
         testCount: await prisma.test.count(),
         classCount: await prisma.class.count(),
         courseCount: await prisma.course.count(),
@@ -210,6 +211,9 @@ export const fetchDashboardData = async (role, userId) => {
         where: {
           testState: "active",
           course: { classes: { some: { id: classId } } },
+          endTime: {
+            gt: new Date(), // Only tests where endTime is in the future
+          },
         },
         select: {
           id: true,

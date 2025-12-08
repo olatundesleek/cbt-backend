@@ -441,7 +441,7 @@ export const getTests = async (user, options = {}) => {
         throw error;
       }
 
-      // Fetch all tests for the student's class
+      // Fetch all tests for the student's class where end date has not passed
       const tests = await prisma.test.findMany({
         where: {
           course: {
@@ -450,6 +450,9 @@ export const getTests = async (user, options = {}) => {
                 id: user.classId,
               },
             },
+          },
+          endTime: {
+            gt: new Date(), // Only tests where endTime is in the future
           },
         },
         include: {
@@ -500,6 +503,9 @@ export const getTests = async (user, options = {}) => {
                 id: user.classId,
               },
             },
+          },
+          endTime: {
+            gt: new Date(), // Only count tests where endTime is in the future
           },
         },
       });
