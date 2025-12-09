@@ -450,6 +450,8 @@ export async function getStudentCourseResults(user, options = {}) {
     testType = "ALL",
     page = 1,
     limit = 10,
+    sort = "date",
+    order = "desc",
   } = options;
 
   // === Fetch student with class info ===
@@ -484,6 +486,22 @@ export async function getStudentCourseResults(user, options = {}) {
     },
   });
 
+  // === Determine sorting ===
+  let orderBy;
+
+  if (sort === "score") {
+    orderBy = { score: order };
+  } else if (sort === "date") {
+    orderBy = [{ endedAt: order }, { startedAt: order }];
+  } else if (sort === "student") {
+    orderBy = { student: { firstname: order } };
+  } else if (sort === "course") {
+    orderBy = { test: { course: { title: order } } };
+  } else {
+    // Default sort by most recent date
+    orderBy = [{ endedAt: order }, { startedAt: order }];
+  }
+
   // === Fetch all sessions with filters ===
   const sessions = await prisma.testSession.findMany({
     where: {
@@ -495,7 +513,7 @@ export async function getStudentCourseResults(user, options = {}) {
         ...(endDate && { endTime: { lte: new Date(endDate) } }),
       },
     },
-    orderBy: { startedAt: "desc" },
+    orderBy,
     include: {
       test: { include: { course: true } },
       answers: { include: { question: true } },
