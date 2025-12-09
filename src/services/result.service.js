@@ -254,7 +254,9 @@ export async function getAllResults(user, filters = {}) {
     search,
   } = filters;
 
-  const where = {};
+  const where = {
+    test: { type: { not: "PRACTICE" } },
+  };
 
   if (testId) where.testId = parseInt(testId);
   if (studentId) where.studentId = parseInt(studentId);
@@ -267,7 +269,7 @@ export async function getAllResults(user, filters = {}) {
       })
       .then((courses) => courses.map((c) => c.id));
 
-    where.test = { courseId: { in: teacherCourseIds } };
+    where.test = { ...where.test, courseId: { in: teacherCourseIds } };
   }
 
   if (courseId) where.test = { ...where.test, courseId: parseInt(courseId) };
@@ -276,10 +278,21 @@ export async function getAllResults(user, filters = {}) {
   if (classId) where.student = { ...where.student, classId: parseInt(classId) };
 
   if (startDate || endDate) {
-    where.endedAt = {
+    // Create date filter for completed sessions
+    const dateFilter = {
       ...(startDate && { gte: new Date(startDate) }),
       ...(endDate && { lte: new Date(endDate) }),
     };
+
+    // Combine date filter with other conditions using AND
+    where.AND = [
+      {
+        OR: [
+          { status: "IN_PROGRESS" },
+          { status: "COMPLETED", endedAt: dateFilter },
+        ],
+      },
+    ];
   }
 
   if (search) {
@@ -294,12 +307,20 @@ export async function getAllResults(user, filters = {}) {
 
   const total = await prisma.testSession.count({ where });
 
-  const orderBy = {
-    ...(sort === "score" && { score: order }),
-    ...(sort === "date" && { endedAt: order }),
-    ...(sort === "student" && { student: { firstname: order } }),
-    ...(sort === "course" && { test: { course: { title: order } } }),
-  };
+  let orderBy;
+
+  if (sort === "score") {
+    orderBy = { score: order };
+  } else if (sort === "date") {
+    orderBy = [{ endedAt: order }, { startedAt: order }];
+  } else if (sort === "student") {
+    orderBy = { student: { firstname: order } };
+  } else if (sort === "course") {
+    orderBy = { test: { course: { title: order } } };
+  } else {
+    // Default sort by most recent
+    orderBy = { startedAt: order };
+  }
 
   const sessions = await prisma.testSession.findMany({
     where,
@@ -315,49 +336,47 @@ export async function getAllResults(user, filters = {}) {
   });
 
   // === Map sessions according to rules ===
-  const mappedSessions = sessions
-    .filter((session) => session.test.type.toUpperCase() !== "PRACTICE") // exclude practice
-    .map((session) => {
-      const type = session.test.type.toUpperCase();
-      const inProgress = session.status === "IN_PROGRESS";
-      const showResult = session.test.showResult;
+  const mappedSessions = sessions.map((session) => {
+    const type = session.test.type.toUpperCase();
+    const inProgress = session.status === "IN_PROGRESS";
+    const showResult = session.test.showResult;
 
-      let score = session.score;
-      let status;
+    let score = session.score;
+    let status;
 
-      if (inProgress) {
-        status = "IN_PROGRESS";
-        score = "IN_PROGRESS";
-      } else if (!showResult) {
-        status = "unreleased";
-        score = "unreleased";
-      } else if (session.status === "COMPLETED") {
-        const numericScore = Number(score);
-        const numericPassMark = Number(session.test.passMark);
-        if (isNaN(numericScore)) {
-          status = "ungraded";
-        } else {
-          status = numericScore >= numericPassMark ? "PASSED" : "FAILED";
-        }
+    if (inProgress) {
+      status = "IN_PROGRESS";
+      score = "IN_PROGRESS";
+    } else if (!showResult) {
+      status = "unreleased";
+      score = "unreleased";
+    } else if (session.status === "COMPLETED") {
+      const numericScore = Number(score);
+      const numericPassMark = Number(session.test.passMark);
+      if (isNaN(numericScore)) {
+        status = "ungraded";
       } else {
-        status = session.status;
+        status = numericScore >= numericPassMark ? "PASSED" : "FAILED";
       }
+    } else {
+      status = session.status;
+    }
 
-      return {
-        id: session.test.id,
-        title: session.test.title,
-        type: session.test.type,
-        session: {
-          id: session.id,
-          score,
-          status,
-          startedAt: session.startedAt,
-          endedAt: session.endedAt,
-        },
-        student: session.student,
-        course: session.test.course,
-      };
-    });
+    return {
+      id: session.test.id,
+      title: session.test.title,
+      type: session.test.type,
+      session: {
+        id: session.id,
+        score,
+        status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+      },
+      student: session.student,
+      course: session.test.course,
+    };
+  });
 
   // === Group by course ===
   const resultsByCourse = {};
