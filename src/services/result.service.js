@@ -442,7 +442,15 @@ export async function getStudentCourseResults(user, options = {}) {
     throw new Error("Only students can access this endpoint");
   }
 
-  const { courseId, startDate, endDate, testLimit, testType = "ALL" } = options;
+  const {
+    courseId,
+    startDate,
+    endDate,
+    testLimit = 10,
+    testType = "ALL",
+    page = 1,
+    limit = 10,
+  } = options;
 
   // === Fetch student with class info ===
   const student = await prisma.user.findUnique({
@@ -463,6 +471,19 @@ export async function getStudentCourseResults(user, options = {}) {
 
   if (!student.class) throw new Error("Student not assigned to any class");
 
+  // === Count total sessions ===
+  const totalSessions = await prisma.testSession.count({
+    where: {
+      studentId: user.id,
+      test: {
+        ...(courseId && { courseId: parseInt(courseId) }),
+        ...(testType !== "ALL" && { type: testType.toUpperCase() }),
+        ...(startDate && { startTime: { gte: new Date(startDate) } }),
+        ...(endDate && { endTime: { lte: new Date(endDate) } }),
+      },
+    },
+  });
+
   // === Fetch all sessions with filters ===
   const sessions = await prisma.testSession.findMany({
     where: {
@@ -479,6 +500,8 @@ export async function getStudentCourseResults(user, options = {}) {
       test: { include: { course: true } },
       answers: { include: { question: true } },
     },
+    skip: (page - 1) * limit,
+    take: limit,
   });
 
   if (!sessions.length) {
@@ -494,6 +517,12 @@ export async function getStudentCourseResults(user, options = {}) {
         totalTests: 0,
         testsCompleted: 0,
         averageScore: 0,
+      },
+      pagination: {
+        page,
+        limit,
+        total: totalSessions,
+        pages: Math.ceil(totalSessions / limit),
       },
     };
   }
@@ -609,6 +638,12 @@ export async function getStudentCourseResults(user, options = {}) {
     },
     courses: results,
     overallStats,
+    pagination: {
+      page,
+      limit,
+      total: totalSessions,
+      pages: Math.ceil(totalSessions / limit),
+    },
   };
 }
 
