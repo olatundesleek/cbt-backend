@@ -195,11 +195,12 @@ export async function getTestResults(testId, user, options = {}) {
   const where = { testId: parseInt(testId) };
   const total = await prisma.testSession.count({ where });
 
-  const orderBy = {
-    ...(sort === "score" && { score: order }),
-    ...(sort === "date" && { endedAt: order }),
-    ...(sort === "student" && { student: { firstname: order } }),
-  };
+  const orderBy = [
+    ...(sort === "score" && [{ score: order }]),
+    ...(sort === "student" && [{ student: { firstname: order } }]),
+    ...(sort === "date" && [{ startedAt: order }]),
+    ...((!sort || sort === "default") && [{ endedAt: "desc" }]), // Default: sort by latest endedAt
+  ];
 
   const sessions = await prisma.testSession.findMany({
     where,
@@ -487,20 +488,13 @@ export async function getStudentCourseResults(user, options = {}) {
   });
 
   // === Determine sorting ===
-  let orderBy;
-
-  if (sort === "score") {
-    orderBy = { score: order };
-  } else if (sort === "date") {
-    orderBy = [{ endedAt: order }, { startedAt: order }];
-  } else if (sort === "student") {
-    orderBy = { student: { firstname: order } };
-  } else if (sort === "course") {
-    orderBy = { test: { course: { title: order } } };
-  } else {
-    // Default sort by most recent date
-    orderBy = [{ endedAt: order }, { startedAt: order }];
-  }
+  const orderBy = [
+    ...(sort === "score" && [{ score: order }]),
+    ...(sort === "date" && [{ startedAt: order }]),
+    ...(sort === "student" && [{ student: { firstname: order } }]),
+    ...(sort === "course" && [{ test: { course: { title: order } } }]),
+    ...((!sort || sort === "default") && [{ endedAt: "desc" }]), // Default: sort by latest endedAt
+  ];
 
   // === Fetch all sessions with filters ===
   const sessions = await prisma.testSession.findMany({
