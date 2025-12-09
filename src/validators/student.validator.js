@@ -11,3 +11,12 @@ export const assignStudentSchema = Joi.object({
 export const assignClassSchema = Joi.object({
   classId: Joi.number().integer().positive().required(),
 });
+
+export const getStudentsListSchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  sort: Joi.string()
+    .valid("firstname", "lastname", "createdAt")
+    .default("createdAt"),
+  order: Joi.string().valid("asc", "desc").default("desc"),
+});

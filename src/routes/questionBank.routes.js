@@ -2,6 +2,7 @@ import express from "express";
 import {
   validateBody,
   validateParams,
+  validateQuery,
 } from "../middleware/validate.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -10,6 +11,7 @@ import {
   createQuestionBankSchema,
   updateQuestionBankSchema,
   getQuestionsSchema,
+  getQuestionBanksSchema,
 } from "../validators/question.validator.js";
 
 const router = express.Router();
@@ -28,6 +30,7 @@ router.get(
   "/",
   authenticate,
   authorizeRoles("TEACHER", "ADMIN"),
+  validateQuery(getQuestionBanksSchema),
   questionBankController.getQuestionBanks
 );
 

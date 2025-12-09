@@ -4,10 +4,12 @@ import {
   assignClassSchema,
   getStudentSchema,
   assignStudentSchema,
+  getStudentsListSchema,
 } from "../validators/student.validator.js";
 import {
   validateBody,
   validateParams,
+  validateQuery,
 } from "../middleware/validate.middleware.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
@@ -19,6 +21,7 @@ router.get(
   "/",
   authenticate,
   authorizeRoles("ADMIN", "TEACHER"),
+  validateQuery(getStudentsListSchema),
   studentController.getStudents
 );
 

@@ -4,9 +4,11 @@ import {
   createClassSchema,
   updateClassSchema,
   deleteClassSchema,
+  getClassesSchema,
 } from "../validators/class.validator.js";
 import { validateBody } from "../middleware/validate.middleware.js";
 import { validateParams } from "../middleware/validate.middleware.js";
+import { validateQuery } from "../middleware/validate.middleware.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 const router = express.Router();
@@ -27,7 +29,12 @@ router.patch(
   classController.updateClass
 );
 
-router.get("/", authenticate, classController.getClass);
+router.get(
+  "/",
+  authenticate,
+  validateQuery(getClassesSchema),
+  classController.getClass
+);
 
 router.delete(
   "/:classId",

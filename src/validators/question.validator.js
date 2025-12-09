@@ -50,6 +50,15 @@ export const getQuestionsSchema = Joi.object({
   bankId: Joi.number().integer().required(),
 });
 
+export const getQuestionBanksSchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  sort: Joi.string()
+    .valid("questionBankName", "createdAt", "courseId")
+    .default("createdAt"),
+  order: Joi.string().valid("asc", "desc").default("desc"),
+});
+
 //  Question Bank Validators
 export const createQuestionBankSchema = Joi.object({
   questionBankName: Joi.string().min(3).max(100).required(),

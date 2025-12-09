@@ -2,6 +2,7 @@ import express from "express";
 import {
   validateBody,
   validateParams,
+  validateQuery,
 } from "../middleware/validate.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 import * as testController from "../controllers/test.controller.js";
@@ -10,6 +11,7 @@ import {
   updateTestSchema,
   testIdSchema,
   deleteTestSchema,
+  getTestsSchema,
 } from "../validators/test.validator.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 
@@ -51,6 +53,11 @@ router.delete(
 );
 
 // Get tests (filtered based on user role)
-router.get("/", authenticate, testController.getTests);
+router.get(
+  "/",
+  authenticate,
+  validateQuery(getTestsSchema),
+  testController.getTests
+);
 
 export default router;
