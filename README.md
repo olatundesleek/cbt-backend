@@ -1804,7 +1804,7 @@ The generated file includes the following data columns:
 
 ## 4. Get Student Course Results (Student)
 
-Retrieve aggregated and detailed results for a student across their courses.
+Retrieve aggregated and detailed results for a student across their courses with pagination and sorting support.
 
 **Endpoint:** `GET /api/results/student/courses`
 
@@ -1812,12 +1812,16 @@ Retrieve aggregated and detailed results for a student across their courses.
 
 **Query Parameters (optional):**
 
-| Parameter   | Type     | Description                                                 |
-| :---------- | :------- | :---------------------------------------------------------- |
-| `courseId`  | `Number` | Filter by specific course ID                                |
-| `startDate` | `Date`   | ISO date string – start of range                            |
-| `endDate`   | `Date`   | ISO date string – end of range                              |
-| `testType`  | `String` | Filter by test type: `TEST`, `EXAM`, `ALL` (default: `ALL`) |
+| Parameter   | Type     | Default | Description                                            |
+| :---------- | :------- | :------ | :----------------------------------------------------- |
+| `courseId`  | `Number` |         | Filter by specific course ID                           |
+| `startDate` | `Date`   |         | ISO date string – start of range                       |
+| `endDate`   | `Date`   |         | ISO date string – end of range                         |
+| `testType`  | `String` | `ALL`   | Filter by test type: `TEST`, `EXAM`, `ALL`             |
+| `page`      | `Number` | `1`     | Page number for pagination                             |
+| `limit`     | `Number` | `10`    | Number of results per page (max 100)                   |
+| `sort`      | `String` | `date`  | Field to sort by: `score`, `date`, `student`, `course` |
+| `order`     | `String` | `desc`  | Sort order: `asc` or `desc`                            |
 
 **Response Example:**
 
@@ -1852,17 +1856,38 @@ Retrieve aggregated and detailed results for a student across their courses.
             "title": "Midterm Exam",
             "type": "EXAM",
             "session": {
+              "id": 5,
               "score": 85,
               "status": "COMPLETED",
               "startedAt": "2025-10-30T10:00:00.000Z",
               "endedAt": "2025-10-30T11:00:00.000Z"
             }
-        }
-      ]
+          }
+        ]
+      }
+    ],
+    "overallStats": {
+      "totalCourses": 1,
+      "totalTests": 2,
+      "testsCompleted": 2,
+      "averageScore": 88
+    },
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 15,
+      "pages": 2
     }
   }
 }
 ```
+
+**Notes:**
+
+- Results are sorted by latest date first (most recent tests appear at the top) by default
+- The response includes pagination metadata for managing large result sets
+- Students can only see results for tests in courses they are enrolled in
+- Test scores and status may be hidden (show as "unreleased") depending on test settings
 
 ## Create Notification
 

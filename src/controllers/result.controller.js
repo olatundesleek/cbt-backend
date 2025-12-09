@@ -59,13 +59,17 @@ export async function getAllResults(req, res, next) {
 
 export async function getStudentCourseResults(req, res, next) {
   try {
-    const { courseId, startDate, endDate, testType, limit } = req.query;
+    const { courseId, startDate, endDate, testType, limit, page, sort, order } =
+      req.query;
     const results = await resultService.getStudentCourseResults(req.user, {
       courseId,
       startDate,
       endDate,
       testType,
-      limit: parseInt(limit),
+      limit: parseInt(limit) || 10,
+      page: parseInt(page) || 1,
+      sort,
+      order,
     });
     return success(res, "Course results retrieved successfully", results);
   } catch (err) {

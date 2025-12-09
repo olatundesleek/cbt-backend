@@ -62,6 +62,11 @@ export const getStudentCourseResultsSchema = Joi.object({
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso().min(Joi.ref("startDate")),
   limit: Joi.number().integer().min(1).max(100).default(10),
+  page: Joi.number().integer().min(1).default(1),
+  sort: Joi.string()
+    .valid("score", "date", "student", "course")
+    .default("date"),
+  order: Joi.string().valid("asc", "desc").default("desc"),
   testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
 }).messages({
   "date.min": "End date must be after start date",
