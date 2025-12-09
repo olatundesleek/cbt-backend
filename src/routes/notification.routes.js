@@ -5,11 +5,13 @@ import { authorizeRoles } from "../middleware/role.middleware.js";
 import {
   validateBody,
   validateParams,
+  validateQuery,
 } from "../middleware/validate.middleware.js";
 import {
   createNotificationSchema,
   updateNotificationSchema,
   deleteNotificationSchema,
+  getNotificationsSchema,
 } from "../validators/notification.validator.js";
 import * as notification from "../controllers/notification.controller.js";
 
@@ -43,6 +45,11 @@ router.delete(
 );
 
 // Any logged-in user can fetch their notifications
-router.get("/", authenticate, notification.getNotificationsController);
+router.get(
+  "/",
+  authenticate,
+  validateQuery(getNotificationsSchema),
+  notification.getNotificationsController
+);
 
 export default router;

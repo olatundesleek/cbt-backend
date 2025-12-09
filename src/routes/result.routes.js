@@ -43,7 +43,7 @@ router.get(
   "/",
   authenticate,
   authorizeRoles("ADMIN", "TEACHER"),
-  validateParams(getAllResultsSchema),
+  validateQuery(getAllResultsSchema),
   resultController.getAllResults
 );
 

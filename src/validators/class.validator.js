@@ -22,3 +22,12 @@ export const deleteClassSchema = Joi.object({
 export const assignStudentSchema = Joi.object({
   studentId: Joi.number().integer().positive().required(),
 });
+
+export const getClassesSchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  sort: Joi.string()
+    .valid("className", "createdAt", "teacher")
+    .default("createdAt"),
+  order: Joi.string().valid("asc", "desc").default("desc"),
+});

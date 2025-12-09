@@ -4,10 +4,12 @@ import {
   createCourseSchema,
   updateCourseSchema,
   deleteCourseSchema,
+  getCoursesSchema,
 } from "../validators/course.validator.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { validateBody } from "../middleware/validate.middleware.js";
 import { validateParams } from "../middleware/validate.middleware.js";
+import { validateQuery } from "../middleware/validate.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 const router = express.Router();
 // router.post('/', authenticate,validateBody authorizeRoles('ADMIN'), courseController.createCourse);
@@ -21,7 +23,12 @@ router.post(
   authorizeRoles("ADMIN"),
   courseController.createCourse
 );
-router.get("/", authenticate, courseController.getCourses);
+router.get(
+  "/",
+  authenticate,
+  validateQuery(getCoursesSchema),
+  courseController.getCourses
+);
 // update
 router.patch(
   "/:courseId",

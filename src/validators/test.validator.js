@@ -99,3 +99,10 @@ export const deleteTestSchema = Joi.object({
     "any.required": "Test ID is required",
   }),
 });
+
+export const getTestsSchema = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  sort: Joi.string().valid("title", "createdAt", "type").default("createdAt"),
+  order: Joi.string().valid("asc", "desc").default("desc"),
+});

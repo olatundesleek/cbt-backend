@@ -2,12 +2,13 @@ import express from "express";
 import * as teacherController from "../controllers/teacher.controller.js";
 import {
   classSchema,
-  getTeachersSchema,
+  getTeachersListSchema,
   assignClassTeacherSchema,
 } from "../validators/teacher.validator.js";
 import {
   validateBody,
   validateParams,
+  validateQuery,
 } from "../middleware/validate.middleware.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
@@ -17,9 +18,9 @@ const router = express.Router();
 // List teachers (ADMIN -> all teachers, TEACHER)
 router.get(
   "/",
-  // validateParams(getTeachersSchema),
   authenticate,
   authorizeRoles("ADMIN"),
+  validateQuery(getTeachersListSchema),
   teacherController.getTeachers
 );
 
