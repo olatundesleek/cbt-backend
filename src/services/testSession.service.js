@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { getIo } from "../utils/socket.js";
+import { getCachedOrFetch } from "../utils/cache.js";
 
 // in-memory timers for active sessions (cleared on finish)
 const sessionTimers = new Map();
@@ -72,12 +73,12 @@ export async function startSession({ studentId, testId }) {
       throw error;
     }
 
-    // Fetch test with course, class, and questions
+    // Fetch test with course and class (questions from cache)
     const test = await prisma.test.findUnique({
       where: { id: testId },
       include: {
         course: { include: { classes: { include: { students: true } } } },
-        bank: { include: { questions: { orderBy: { id: "asc" } } } },
+        bank: true,
       },
     });
     if (!test) {
@@ -86,6 +87,17 @@ export async function startSession({ studentId, testId }) {
       error.statusCode = 404;
       throw error;
     }
+
+    // Fetch questions from cache
+    const allQuestions = await getCachedOrFetch(
+      `questions_bank_${test.bankId}`,
+      () =>
+        prisma.question.findMany({
+          where: { bankId: test.bankId },
+          orderBy: { id: "asc" },
+        }),
+      30 * 60 * 1000 // 30 minutes cache
+    );
 
     const now = new Date();
 
@@ -136,8 +148,6 @@ export async function startSession({ studentId, testId }) {
     const existing = await prisma.testSession.findFirst({
       where: { studentId, testId, status: "IN_PROGRESS", endedAt: null },
     });
-
-    const allQuestions = test.bank.questions;
 
     // --------------------------------------------------------
     //   EXISTING SESSION — INCLUDE selectedOption
@@ -277,18 +287,26 @@ export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
     include: {
       test: {
         include: {
-          bank: {
-            include: { questions: { orderBy: { id: "asc" } } },
-          },
+          bank: true,
         },
       },
     },
   });
 
-  if (!session?.test?.bank?.questions?.length)
-    throw new Error("No questions found for this test");
+  if (!session?.test?.bank) throw new Error("Test bank not found");
 
-  const questions = session.test.bank.questions;
+  // Fetch questions from cache
+  const questions = await getCachedOrFetch(
+    `questions_bank_${session.test.bankId}`,
+    () =>
+      prisma.question.findMany({
+        where: { bankId: session.test.bankId },
+        orderBy: { id: "asc" },
+      }),
+    30 * 60 * 1000 // 30 minutes cache
+  );
+
+  if (!questions?.length) throw new Error("No questions found for this test");
 
   if (questionNumber < 1 || questionNumber > questions.length)
     throw new Error("Invalid question number");
@@ -380,7 +398,7 @@ export async function submitAnswerAndGetNext({
     include: {
       test: {
         include: {
-          bank: { include: { questions: { orderBy: { id: "asc" } } } },
+          bank: true,
         },
       },
     },
@@ -392,7 +410,16 @@ export async function submitAnswerAndGetNext({
   if (session.endedAt || session.status === "COMPLETED")
     throw new Error("Session already ended");
 
-  const questions = session.test.bank.questions;
+  // Fetch questions from cache
+  const questions = await getCachedOrFetch(
+    `questions_bank_${session.test.bankId}`,
+    () =>
+      prisma.question.findMany({
+        where: { bankId: session.test.bankId },
+        orderBy: { id: "asc" },
+      }),
+    30 * 60 * 1000 // 30 minutes cache
+  );
 
   // Save up to 2 answers
   for (const a of answers) {
@@ -456,7 +483,7 @@ export async function submitAnswerAndGetPrevious({
     include: {
       test: {
         include: {
-          bank: { include: { questions: { orderBy: { id: "asc" } } } },
+          bank: true,
         },
       },
     },
@@ -467,7 +494,16 @@ export async function submitAnswerAndGetPrevious({
   if (session.endedAt || session.status === "COMPLETED")
     throw new Error("Session already finished");
 
-  const questions = session.test.bank.questions;
+  // Fetch questions from cache
+  const questions = await getCachedOrFetch(
+    `questions_bank_${session.test.bankId}`,
+    () =>
+      prisma.question.findMany({
+        where: { bankId: session.test.bankId },
+        orderBy: { id: "asc" },
+      }),
+    30 * 60 * 1000 // 30 minutes cache
+  );
 
   // Save submitted answers
   for (const a of answers) {

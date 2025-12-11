@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { getCachedOrFetch } from "../utils/cache.js";
 import fs from "fs";
 import path from "path";
 
@@ -40,7 +41,6 @@ export const updateSettingsService = async (data, file) => {
         logoUrl = uploaded.secure_url;
       }
     }
-    // Case 3: neither -> leave undefined (don't update)
 
     // Handle Favicon
     // Case 1: data.favicon is null (explicit clear) -> set to null
@@ -118,7 +118,7 @@ export const updateSettingsService = async (data, file) => {
       ...(loginBannerUrl !== undefined && { loginBannerUrl }),
     };
 
-    return prisma.systemSettings.upsert({
+    const updated = await prisma.systemSettings.upsert({
       where: { id: 1 },
       update: updateData,
       create: {
@@ -134,11 +134,34 @@ export const updateSettingsService = async (data, file) => {
         systemStatus: systemStatus || "ACTIVE",
       },
     });
+
+    // Invalidate cache after update
+    invalidateSystemSettingsCache();
+
+    return updated;
   } catch (error) {
     throw error;
   }
 };
 
 export const getSettingsService = () => {
-  return prisma.systemSettings.findUnique({ where: { id: 1 } });
+  // Cache system settings for 1 hour (3600000 ms) since they rarely change
+  return getCachedOrFetch(
+    "system_settings",
+    () => prisma.systemSettings.findUnique({ where: { id: 1 } }),
+    60 * 60 * 1000 // 1 hour TTL
+  );
+};
+
+/**
+ * Invalidate system settings cache
+ * Called when settings are updated
+ */
+export const invalidateSystemSettingsCache = async () => {
+  try {
+    const cacheManager = (await import("../utils/cache.js")).default;
+    cacheManager.invalidate("system_settings");
+  } catch (err) {
+    console.warn("Could not invalidate cache:", err.message);
+  }
 };

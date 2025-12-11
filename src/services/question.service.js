@@ -1,5 +1,7 @@
 import { log } from "console";
 import prisma from "../config/prisma.js";
+import { getCachedOrFetch } from "../utils/cache.js";
+import cacheManager from "../utils/cache.js";
 
 const canAccessQuestion = async (questionId, user) => {
   const question = await prisma.question.findUnique({
@@ -74,10 +76,30 @@ export const createQuestion = async (data, user) => {
     );
 
     // Return array if input was array, otherwise return single question
-    return Array.isArray(data) ? createdQuestions : createdQuestions[0];
+    const result = Array.isArray(data) ? createdQuestions : createdQuestions[0];
+
+    // Invalidate cache after creating questions
+    invalidateQuestionCaches();
+
+    return result;
   } catch (error) {
     console.error("Error creating question(s):", error);
     throw error;
+  }
+};
+
+/**
+ * Invalidate question-related caches
+ */
+const invalidateQuestionCaches = (bankId = null) => {
+  try {
+    cacheManager.invalidate("all_questions");
+    if (bankId) {
+      cacheManager.invalidate(`questions_bank_${bankId}`);
+    }
+    cacheManager.invalidate("all_question_banks");
+  } catch (err) {
+    console.warn("Could not invalidate question caches:", err.message);
   }
 };
 
@@ -133,6 +155,9 @@ export const updateQuestion = async (questionId, data, user) => {
     },
   });
 
+  // Invalidate cache after update
+  invalidateQuestionCaches(question.bankId);
+
   return question;
 };
 
@@ -141,9 +166,18 @@ export const deleteQuestion = async (questionId, user) => {
     throw new Error("Cannot delete this question");
   }
 
+  const question = await prisma.question.findUnique({
+    where: { id: parseInt(questionId) },
+  });
+
   await prisma.question.delete({
     where: { id: parseInt(questionId) },
   });
+
+  // Invalidate cache after delete
+  if (question) {
+    invalidateQuestionCaches(question.bankId);
+  }
 };
 
 import { parseQuestionsCsv } from "../utils/csv.js";
@@ -194,6 +228,9 @@ export const uploadQuestionsFromCsv = async (filePath, bankId, user) => {
         })
       )
     );
+
+    // Invalidate cache after creating questions
+    invalidateQuestionCaches(parseInt(bankId));
 
     return createdQuestions;
   } catch (error) {

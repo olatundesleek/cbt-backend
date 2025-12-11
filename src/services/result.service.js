@@ -280,7 +280,7 @@ export async function getAllResults(user, filters = {}) {
 
   if (courseId) where.test = { ...where.test, courseId: parseInt(courseId) };
   if (testType && testType !== "ALL")
-    where.test = { ...where.test, type: testType };
+    where.test = { ...where.test, type: testType.toUpperCase() };
   if (classId) where.student = { ...where.student, classId: parseInt(classId) };
 
   if (startDate || endDate) {
