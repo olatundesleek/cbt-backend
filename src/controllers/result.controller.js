@@ -81,16 +81,14 @@ export async function downloadStudentCourseResults(req, res) {
   try {
     const user = req.user;
 
-    const startDate = req.query.startDate;
-    const endDate = req.query.endDate;
-
     let format = req.query.format; // DO NOT destructure this, left it like this on purpose, no do oversabi
     format = format ? format.toString().toLowerCase() : "pdf";
 
-    const results = await resultService.getStudentCourseResults(user, {
-      startDate,
-      endDate,
-    });
+    // Pass all filters including pagination and sorting
+    const filters = { ...req.query };
+    delete filters.format; // Remove format from filters
+
+    const results = await resultService.getStudentCourseResults(user, filters);
 
     if (format === "excel") {
       const workbook = await resultService.generateExcel(results);

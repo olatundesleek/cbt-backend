@@ -1,13 +1,13 @@
 import prisma from "../config/prisma.js";
 import { getIo } from "../utils/socket.js";
 import { getCachedOrFetch } from "../utils/cache.js";
-import { seededShuffle } from "../utils/seededShuffle.js";
 
 // in-memory timers for active sessions (cleared on finish)
 const sessionTimers = new Map();
 
 export async function endSessionByTimer(sessionId, reason = "duration") {
   try {
+    // Clear both the timeout and interval first
     const timers = sessionTimers.get(sessionId);
     if (timers) {
       clearTimeout(timers.timeout);
@@ -15,23 +15,28 @@ export async function endSessionByTimer(sessionId, reason = "duration") {
       sessionTimers.delete(sessionId);
     }
 
+    // Fetch session with related data
     const session = await prisma.testSession.findUnique({
       where: { id: sessionId },
       include: { answers: { include: { question: true } }, test: true },
     });
 
+    // Ignore if already completed or ended
     if (!session || session.endedAt || session.status === "COMPLETED") return;
 
+    // Compute score safely
     const score = session.answers.reduce(
       (total, answer) => total + (answer.isCorrect ? 1 : 0),
       0
     );
 
+    // Mark as completed
     await prisma.testSession.update({
       where: { id: sessionId },
       data: { endedAt: new Date(), status: "COMPLETED", score },
     });
 
+    // Notify clients in that session room
     try {
       const io = getIo();
       io.to(`session_${sessionId}`).emit("time_up", {
@@ -49,13 +54,19 @@ export async function endSessionByTimer(sessionId, reason = "duration") {
 
 export async function startSession({ studentId, testId }) {
   try {
+    // Fetch student info
     const student = await prisma.user.findUnique({
       where: { id: studentId },
       select: { id: true, username: true, firstname: true, lastname: true },
     });
-    if (!student)
-      throw Object.assign(new Error("Student not found"), { statusCode: 404 });
+    if (!student) {
+      const error = new Error();
+      error.details = "Student not found";
+      error.statusCode = 404;
+      throw error;
+    }
 
+    // Fetch test with course and class
     const test = await prisma.test.findUnique({
       where: { id: testId },
       include: {
@@ -63,9 +74,14 @@ export async function startSession({ studentId, testId }) {
         bank: true,
       },
     });
-    if (!test)
-      throw Object.assign(new Error("Test not found"), { statusCode: 404 });
+    if (!test) {
+      const error = new Error();
+      error.details = "Test not found";
+      error.statusCode = 404;
+      throw error;
+    }
 
+    // Fetch questions from cache
     const allQuestions = await getCachedOrFetch(
       `questions_bank_${test.bankId}`,
       () =>
@@ -77,50 +93,70 @@ export async function startSession({ studentId, testId }) {
     );
 
     const now = new Date();
-    if (
-      (test.startTime && test.startTime > now) ||
-      (test.endTime && test.endTime < now) ||
-      test.testState !== "active"
-    ) {
-      throw Object.assign(new Error("Test not available at this time"), {
-        statusCode: 400,
-      });
+
+    // Check test availability
+    if (test.startTime && test.startTime > now) {
+      const error = new Error();
+      error.details = "Test not yet started";
+      error.statusCode = 400;
+      throw error;
+    }
+    if (test.endTime && test.endTime < now) {
+      const error = new Error();
+      error.details = "Test already ended";
+      error.statusCode = 400;
+      throw error;
+    }
+    if (test.testState !== "active") {
+      const error = new Error();
+      error.details = "Test is not active";
+      error.statusCode = 400;
+      throw error;
     }
 
+    // Verify student enrollment
     const enrolled = await prisma.course.findFirst({
       where: {
         id: test.courseId,
         classes: { some: { students: { some: { id: studentId } } } },
       },
     });
-    if (!enrolled)
-      throw Object.assign(new Error("Student not enrolled"), {
-        statusCode: 404,
-      });
+    if (!enrolled) {
+      const error = new Error();
+      error.details = "Student not enrolled for this course";
+      error.statusCode = 404;
+      throw error;
+    }
 
+    // Count completed attempts
     const attemptCount = await prisma.testSession.count({
       where: { studentId, testId, status: "COMPLETED" },
     });
     if (test.attemptsAllowed && attemptCount >= test.attemptsAllowed) {
-      throw Object.assign(new Error("Maximum attempts reached"), {
-        statusCode: 400,
-      });
+      const error = new Error();
+      error.details = "Maximum attempts reached for this test";
+      error.statusCode = 400;
+      throw error;
     }
 
+    // Check for existing unfinished session
     const existing = await prisma.testSession.findFirst({
       where: { studentId, testId, status: "IN_PROGRESS", endedAt: null },
     });
 
-    // Shuffle questions deterministically using session ID
-    const shuffledQuestions = existing
-      ? seededShuffle(allQuestions, existing.id)
-      : null;
-
+    // --------------------------------------------------------
+    // EXISTING SESSION — INCLUDE selectedOption
+    // --------------------------------------------------------
     if (existing) {
-      // Existing session: return first 2 questions with selectedOption
       const answeredCount = await prisma.answer.count({
         where: { testSessionId: existing.id },
       });
+      const course = { courseTitle: test.course.title, testTitle: test.title };
+
+      // First 2 questions
+      const baseQuestions = allQuestions.slice(0, 2);
+
+      // Fetch previously selected answers
       const existingAnswers = await prisma.answer.findMany({
         where: {
           testSessionId: existing.id,
@@ -128,39 +164,41 @@ export async function startSession({ studentId, testId }) {
         },
         select: { questionId: true, selectedOption: true },
       });
+
       const answerMap = new Map(
         existingAnswers.map((a) => [a.questionId, a.selectedOption])
       );
-      const questions = shuffledQuestions.slice(0, 2).map((q, i) => ({
-        id: q.id,
-        text: q.text,
-        options: Array.isArray(q.options)
-          ? q.options
-          : JSON.parse(q.options || "[]"),
-        selectedOption: answerMap.get(q.id) || null,
+
+      // Add displayNumber and selectedOption
+      const answeredWithDisplayNumbers = existingAnswers.map((a) => {
+        const index = allQuestions.findIndex((q) => q.id === a.questionId);
+        return { ...a, displayNumber: index + 1 };
+      });
+
+      const questions = baseQuestions.map(({ answer, ...rest }, i) => ({
+        ...rest,
+        selectedOption: answerMap.get(rest.id) || null,
         displayNumber: i + 1,
       }));
 
       return {
         student,
         session: existing,
-        course: { courseTitle: test.course.title, testTitle: test.title },
+        course,
         questions,
-        answered: existingAnswers.map((a) => ({
-          ...a,
-          displayNumber:
-            shuffledQuestions.findIndex((q) => q.id === a.questionId) + 1,
-        })),
+        answered: answeredWithDisplayNumbers,
         progress: { answeredCount, total: allQuestions.length },
       };
     }
 
-    // New session
+    // --------------------------------------------------------
+    // NEW SESSION — INCLUDE selectedOption = null
+    // --------------------------------------------------------
     const session = await prisma.testSession.create({
       data: { studentId, testId, status: "IN_PROGRESS" },
     });
-    const shuffled = seededShuffle(allQuestions, session.id);
 
+    // Timers + socket setup
     const endTimeMs = test.endTime
       ? new Date(test.endTime).getTime() - now.getTime()
       : Infinity;
@@ -191,22 +229,23 @@ export async function startSession({ studentId, testId }) {
         sessionTimers.set(session.id, { timeout, interval });
       }
 
-      getIo()
-        .to(`session_${session.id}`)
-        .emit("test_started", { sessionId: session.id, testId });
+      const io = getIo();
+      io.to(`session_${session.id}`).emit("test_started", {
+        sessionId: session.id,
+        testId,
+      });
     } catch (err) {
       console.warn("Socket/timer setup failed:", err);
     }
 
-    const questions = shuffled.slice(0, 2).map((q, i) => ({
-      id: q.id,
-      text: q.text,
-      options: Array.isArray(q.options)
-        ? q.options
-        : JSON.parse(q.options || "[]"),
-      selectedOption: null,
-      displayNumber: i + 1,
-    }));
+    // First 2 questions for new session → selectedOption = null
+    const questions = allQuestions
+      .slice(0, 2)
+      .map(({ answer, ...rest }, i) => ({
+        ...rest,
+        selectedOption: null,
+        displayNumber: i + 1,
+      }));
 
     return {
       student,
@@ -217,27 +256,19 @@ export async function startSession({ studentId, testId }) {
     };
   } catch (error) {
     console.error("Error in startSession:", error);
-    throw Object.assign(new Error("Failed to start test session"), {
-      statusCode: 400,
-    });
+    error.message = "failed to start test session";
+    throw error;
   }
 }
 
-/**
- * Fetch questions by visual order (paginated), using seeded shuffle
- */
-export async function fetchQuestionsByNumber({
-  sessionId,
-  questionNumber,
-  pageSize = 2,
-}) {
+export async function fetchQuestionsByNumber({ sessionId, questionNumber }) {
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
     include: { test: { include: { bank: true } } },
   });
   if (!session?.test?.bank) throw new Error("Test bank not found");
 
-  const allQuestions = await getCachedOrFetch(
+  const questions = await getCachedOrFetch(
     `questions_bank_${session.test.bankId}`,
     () =>
       prisma.question.findMany({
@@ -247,52 +278,49 @@ export async function fetchQuestionsByNumber({
     30 * 60 * 1000
   );
 
-  if (!allQuestions.length) throw new Error("No questions found for this test");
-  if (questionNumber < 1 || questionNumber > allQuestions.length)
+  if (!questions.length) throw new Error("No questions found for this test");
+  if (questionNumber < 1 || questionNumber > questions.length)
     throw new Error("Invalid question number");
 
-  const shuffled = seededShuffle(allQuestions, session.id);
   const startIndex = questionNumber - 1;
-  const endIndex = Math.min(startIndex + pageSize, shuffled.length);
-  const slice = shuffled.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + 2, questions.length);
 
-  const existingAnswers = await prisma.answer.findMany({
-    where: {
-      testSessionId: sessionId,
-      questionId: { in: slice.map((q) => q.id) },
-    },
-    select: { questionId: true, selectedOption: true },
-  });
+  const nextQuestionsSlice = questions
+    .slice(startIndex, endIndex)
+    .map(({ answer, ...rest }, i) => ({
+      ...rest,
+      displayNumber: startIndex + i + 1,
+    }));
+
+  const questionIds = nextQuestionsSlice.map((q) => q.id);
+  const existingAnswers = questionIds.length
+    ? await prisma.answer.findMany({
+        where: { testSessionId: sessionId, questionId: { in: questionIds } },
+        select: { questionId: true, selectedOption: true },
+      })
+    : [];
+
   const answerMap = new Map(
     existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
-
-  const nextQuestions = slice.map((q, i) => ({
-    id: q.id,
-    text: q.text,
-    options: Array.isArray(q.options)
-      ? q.options
-      : JSON.parse(q.options || "[]"),
+  const nextQuestions = nextQuestionsSlice.map((q) => ({
+    ...q,
     selectedOption: answerMap.get(q.id) || null,
-    displayNumber: startIndex + i + 1,
   }));
 
   const answeredCount = await prisma.answer.count({
     where: { testSessionId: sessionId },
   });
-  const showSubmitButton = endIndex >= shuffled.length;
+  const showSubmitButton = endIndex >= questions.length;
 
   return {
     showSubmitButton,
-    finished: endIndex >= shuffled.length,
+    finished: false,
     nextQuestions,
-    progress: { answeredCount, total: shuffled.length },
+    progress: { answeredCount, total: questions.length },
   };
 }
 
-/**
- * Submit single answer
- */
 export async function submitAnswerOnly({
   sessionId,
   questionId,
@@ -322,29 +350,22 @@ export async function submitAnswerOnly({
   }
 }
 
-/**
- * Submit answers and get next page
- */
 export async function submitAnswerAndGetNext({
   sessionId,
   answers,
   studentId,
-  pageSize = 2,
 }) {
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
     include: { test: { include: { bank: true } } },
   });
-  if (
-    !session ||
-    session.studentId !== studentId ||
-    session.endedAt ||
-    session.status === "COMPLETED"
-  ) {
-    throw new Error("Session not accessible");
-  }
+  if (!session) throw new Error("Session not found");
+  if (session.studentId !== studentId)
+    throw new Error("Unauthorized access to session");
+  if (session.endedAt || session.status === "COMPLETED")
+    throw new Error("Session already ended");
 
-  const allQuestions = await getCachedOrFetch(
+  const questions = await getCachedOrFetch(
     `questions_bank_${session.test.bankId}`,
     () =>
       prisma.question.findMany({
@@ -354,7 +375,6 @@ export async function submitAnswerAndGetNext({
     30 * 60 * 1000
   );
 
-  // Save submitted answers
   for (const a of answers) {
     if (!a.selectedOption || a.selectedOption === 0) continue;
     await submitAnswerOnly({
@@ -364,75 +384,61 @@ export async function submitAnswerAndGetNext({
     });
   }
 
-  const shuffled = seededShuffle(allQuestions, session.id);
   const lastSubmittedId = answers[answers.length - 1].questionId;
-  const lastIndex = shuffled.findIndex((q) => q.id === lastSubmittedId);
+  const lastIndex = questions.findIndex((q) => q.id === lastSubmittedId);
+  const nextQuestionsSlice = questions.slice(lastIndex + 1, lastIndex + 3);
 
-  const nextSlice = shuffled.slice(lastIndex + 1, lastIndex + 1 + pageSize);
-
+  const questionIds = nextQuestionsSlice.map((q) => q.id);
   const existingAnswers = await prisma.answer.findMany({
-    where: {
-      testSessionId: sessionId,
-      questionId: { in: nextSlice.map((q) => q.id) },
-    },
+    where: { testSessionId: sessionId, questionId: { in: questionIds } },
     select: { questionId: true, selectedOption: true },
   });
   const answerMap = new Map(
     existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
 
-  const nextQuestions = nextSlice.map((q, i) => ({
-    id: q.id,
-    text: q.text,
-    options: Array.isArray(q.options)
-      ? q.options
-      : JSON.parse(q.options || "[]"),
-    selectedOption: answerMap.get(q.id) || null,
+  const nextQuestions = nextQuestionsSlice.map(({ answer, ...rest }, i) => ({
+    ...rest,
+    selectedOption: answerMap.get(rest.id) || null,
     displayNumber: lastIndex + i + 2,
   }));
 
   const answeredCount = await prisma.answer.count({
     where: { testSessionId: sessionId },
   });
-  if (!nextQuestions.length)
-    return {
-      finished: true,
-      data: await finishSession({ sessionId, studentId }),
-    };
 
-  const showSubmitButton =
-    lastIndex + 1 + nextQuestions.length >= shuffled.length;
+  if (!nextQuestions.length) {
+    const result = await finishSession({ sessionId, studentId });
+    return { finished: true, data: result };
+  }
+
+  const showSubmitButton = nextQuestionsSlice.length <= 1;
+
   return {
     showSubmitButton,
     finished: false,
     nextQuestions,
-    progress: { answeredCount, total: shuffled.length },
+    progress: { answeredCount, total: questions.length },
   };
 }
 
-/**
- * Submit answers and get previous page
- */
 export async function submitAnswerAndGetPrevious({
   sessionId,
   answers,
   studentId,
-  pageSize = 2,
 }) {
-  if (!answers || !answers.length) throw new Error("No answers provided");
+  if (!answers?.length) throw new Error("No answers provided");
+
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
     include: { test: { include: { bank: true } } },
   });
-  if (
-    !session ||
-    session.studentId !== studentId ||
-    session.endedAt ||
-    session.status === "COMPLETED"
-  )
-    throw new Error("Session not accessible");
+  if (!session) throw new Error("Session not found");
+  if (session.studentId !== studentId) throw new Error("Unauthorized access");
+  if (session.endedAt || session.status === "COMPLETED")
+    throw new Error("Session already finished");
 
-  const allQuestions = await getCachedOrFetch(
+  const questions = await getCachedOrFetch(
     `questions_bank_${session.test.bankId}`,
     () =>
       prisma.question.findMany({
@@ -442,7 +448,6 @@ export async function submitAnswerAndGetPrevious({
     30 * 60 * 1000
   );
 
-  // Save submitted answers
   for (const a of answers) {
     if (!a.selectedOption || a.selectedOption === 0) continue;
     await submitAnswerOnly({
@@ -452,57 +457,104 @@ export async function submitAnswerAndGetPrevious({
     });
   }
 
-  const shuffled = seededShuffle(allQuestions, session.id);
-  const firstIndex = shuffled.findIndex((q) => q.id === answers[0].questionId);
-  const start = Math.max(firstIndex - pageSize, 0);
-  const prevSlice = shuffled.slice(start, firstIndex);
+  const firstIndex = questions.findIndex((q) => q.id === answers[0].questionId);
+  const start = Math.max(firstIndex - 2, 0);
+  const previousQuestionsSlice = questions.slice(start, firstIndex);
 
+  const answeredCount = await prisma.answer.count({
+    where: { testSessionId: sessionId },
+  });
+
+  if (!previousQuestionsSlice.length) {
+    return {
+      finished: false,
+      previousQuestions: [],
+      progress: { answeredCount, total: questions.length },
+      message: "No previous questions available",
+    };
+  }
+
+  const questionIds = previousQuestionsSlice.map((q) => q.id);
   const existingAnswers = await prisma.answer.findMany({
-    where: {
-      testSessionId: sessionId,
-      questionId: { in: prevSlice.map((q) => q.id) },
-    },
+    where: { testSessionId: sessionId, questionId: { in: questionIds } },
     select: { questionId: true, selectedOption: true },
   });
   const answerMap = new Map(
     existingAnswers.map((a) => [a.questionId, a.selectedOption])
   );
 
-  const previousQuestions = prevSlice.map((q, i) => ({
-    id: q.id,
-    text: q.text,
-    options: Array.isArray(q.options)
-      ? q.options
-      : JSON.parse(q.options || "[]"),
-    selectedOption: answerMap.get(q.id) || null,
-    displayNumber: start + i + 1,
-  }));
+  const previousQuestions = previousQuestionsSlice.map(
+    ({ answer, ...rest }, i) => ({
+      ...rest,
+      selectedOption: answerMap.get(rest.id) || null,
+      displayNumber: start + i + 1,
+    })
+  );
 
-  const answeredCount = await prisma.answer.count({
-    where: { testSessionId: sessionId },
-  });
   return {
     finished: false,
     previousQuestions,
-    progress: { answeredCount, total: shuffled.length },
+    progress: { answeredCount, total: questions.length },
   };
 }
 
-/**
- * Finish session
- */
 export async function finishSession({ sessionId, studentId }) {
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
     include: { answers: { include: { question: true } }, test: true },
   });
-  if (!session || session.studentId !== studentId)
-    throw new Error("Session not found");
+  if (!session) throw new Error("Session not found");
+  if (session.studentId !== studentId) throw new Error("Not your session");
+
+  const formatTestAnswers = (answers) =>
+    answers.map((a) => {
+      const { answer: correctAnswer, options, ...restQuestion } = a.question;
+      return {
+        id: a.id,
+        questionId: a.questionId,
+        selectedOption: a.selectedOption,
+        isCorrect: a.isCorrect,
+        question: {
+          ...restQuestion,
+          options: Array.isArray(options)
+            ? options
+            : JSON.parse(options || "[]"),
+          correctAnswer,
+        },
+      };
+    });
 
   const computeScore = (answers) =>
     answers.reduce((sum, a) => sum + (a.isCorrect ? 1 : 0), 0);
-  const score = computeScore(session.answers);
 
+  if (session.endedAt || session.status === "COMPLETED") {
+    if (session.test.type === "PRACTICE") {
+      return {
+        id: session.id,
+        testId: session.testId,
+        studentId: session.studentId,
+        status: session.status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        type: session.test.type,
+        score: computeScore(session.answers),
+        answers: formatTestAnswers(session.answers),
+      };
+    }
+    return {
+      id: session.id,
+      testId: session.testId,
+      studentId: session.studentId,
+      status: session.status,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      type: session.test?.type ?? "UNKNOWN",
+    };
+  }
+
+  console.log("Finishing session for type:", session.test.type);
+
+  const score = computeScore(session.answers);
   const updated = await prisma.testSession.update({
     where: { id: sessionId },
     data: { endedAt: new Date(), status: "COMPLETED", score },
@@ -515,20 +567,7 @@ export async function finishSession({ sessionId, studentId }) {
   }
 
   if (session.test.type === "PRACTICE") {
-    const formattedAnswers = session.answers.map((a) => ({
-      id: a.id,
-      questionId: a.questionId,
-      selectedOption: a.selectedOption,
-      isCorrect: a.isCorrect,
-      question: {
-        id: a.question.id,
-        text: a.question.text,
-        options: Array.isArray(a.question.options)
-          ? a.question.options
-          : JSON.parse(a.question.options || "[]"),
-      },
-    }));
-    return { ...updated, score, answers: formattedAnswers };
+    return { ...updated, score, answers: formatTestAnswers(session.answers) };
   }
 
   return {

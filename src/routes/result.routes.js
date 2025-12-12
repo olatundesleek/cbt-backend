@@ -52,7 +52,7 @@ router.get(
   "/download",
   authenticate,
   authorizeRoles("ADMIN", "TEACHER"),
-  validateQuery(getAllResultsSchema),
+  // validateQuery(getAllResultsSchema),
   resultController.downloadResults
 );
 
@@ -70,7 +70,7 @@ router.get(
   "/student/courses/download",
   authenticate,
   authorizeRoles("STUDENT"),
-  validateQuery(getStudentCourseResultsSchema),
+  // validateQuery(getStudentCourseResultsSchema),
   resultController.downloadStudentCourseResults
 );
 
