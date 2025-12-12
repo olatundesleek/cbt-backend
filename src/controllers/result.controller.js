@@ -65,7 +65,7 @@ export async function getStudentCourseResults(req, res, next) {
       courseId,
       startDate,
       endDate,
-      testType,
+      testType: testType?.toUpperCase(),
       limit: parseInt(limit) || 10,
       page: parseInt(page) || 1,
       sort,

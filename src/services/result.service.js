@@ -280,7 +280,7 @@ export async function getAllResults(user, filters = {}) {
 
   if (courseId) where.test = { ...where.test, courseId: parseInt(courseId) };
   if (testType && testType !== "ALL")
-    where.test = { ...where.test, type: testType };
+    where.test = { ...where.test, type: testType.toUpperCase() };
   if (classId) where.student = { ...where.student, classId: parseInt(classId) };
 
   if (startDate || endDate) {
@@ -460,6 +460,7 @@ export async function getStudentCourseResults(user, options = {}) {
     order = "desc",
   } = options;
 
+  console.log("this is the testType" + testType);
   // === Fetch student with class info ===
   const student = await prisma.user.findUnique({
     where: { id: user.id },
