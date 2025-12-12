@@ -693,12 +693,12 @@ export async function toggleResultRelease(testId, showResult, user) {
 }
 
 export async function generatePDF(results) {
-  // Calculate average
-  console.log("this is the result" + results);
+  // Calculate average safely (ignore unreleased scores)
   const totalScores = [];
   results.courses.forEach((c) => {
     c.tests.forEach((t) => {
-      if (t.session?.score != null) totalScores.push(t.session.score);
+      const score = Number(t.session?.score);
+      if (!isNaN(score)) totalScores.push(score);
     });
   });
 
@@ -783,7 +783,11 @@ export async function generatePDF(results) {
                     (t) => `<tr>
                       <td>${c.course?.title ?? "N/A"}</td>
                       <td>${t.title ?? "N/A"}</td>
-                      <td>${t.session?.score ?? "unreleased"}</td>
+                      <td>${
+                        t.session?.score != null
+                          ? t.session.score
+                          : "unreleased"
+                      }</td>
                       <td>${t.session?.status ?? "unreleased"}</td>
                       <td>${
                         t.session?.startedAt
@@ -818,7 +822,6 @@ export async function generatePDF(results) {
   `;
 
   const file = { content: html };
-
   const pdfBuffer = await pdf.generatePdf(file, { format: "A4" });
   return pdfBuffer;
 }
