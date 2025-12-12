@@ -460,6 +460,7 @@ export async function getStudentCourseResults(user, options = {}) {
     order = "desc",
   } = options;
 
+  console.log("this is the testType" + testType);
   // === Fetch student with class info ===
   const student = await prisma.user.findUnique({
     where: { id: user.id },

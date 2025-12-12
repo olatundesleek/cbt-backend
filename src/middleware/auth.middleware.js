@@ -3,7 +3,17 @@ import { verifyToken } from "../utils/jwt.js";
 
 export async function authenticate(req, res, next) {
   try {
-    const token = req.cookies.reqtoken;
+    // Check for token in cookies first
+    let token = req.cookies.reqtoken;
+
+    // If no token in cookies, check Authorization header (for downloads and other requests)
+    if (!token && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith("Bearer ")) {
+        token = authHeader.substring(7);
+      }
+    }
+
     console.log("Authenticating with token:", token);
     if (!token) return res.status(401).send("No token");
 
