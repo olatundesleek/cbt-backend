@@ -33,12 +33,8 @@ const isProduction = process.env.NODE_ENV === "production";
 app.use(
   cors({
     origin: function (origin, callback) {
-      // ✅ Allow all origins in dev/local
-      if (!isProduction) {
-        return callback(null, true);
-      }
+      if (!isProduction) return callback(null, true);
 
-      // ✅ Restrict in production
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
@@ -75,6 +71,20 @@ app.use("/api/teachers", teacherRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/system-settings", systemSettingsRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+// =========================
+// Serve Frontend Build (Next.js / React)
+// =========================
+//
+/*
+const frontendBuildPath = path.join(path.dirname(process.execPath), "build");
+app.use(express.static(frontendBuildPath));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, "index.html"));
+});
+
+*/
 
 app.get("/", (req, res) => res.json({ ok: true }));
 
