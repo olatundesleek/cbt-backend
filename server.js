@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server as IOServer } from "socket.io";
 import { setIo } from "./src/utils/socket.js";
+import { verifyLicense } from "./src/utils/verifyLicense.js";
 
 // Load env file dynamically based on NODE_ENV
 if (process.env.NODE_ENV !== "production") {
@@ -81,4 +82,30 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+async function startServer() {
+  // const license = await verifyLicense();
+
+  // if (!license.ok) {
+  //   console.log("\n APPLICATION BLOCKED");
+  //   console.log(license.reason);
+  //   process.exit(1);
+  // }
+
+  // // print license state if trial
+  // if (license.mode === "TRIAL") {
+  //   console.log(` Trial Mode — ${license.daysLeft} days left`);
+  // }
+
+  // if (license.mode === "LICENSED") {
+  //   console.log(` Licensed to ${license.customer}`);
+  //   console.log(`Expires: ${license.expires}`);
+  // }
+
+  server.listen(PORT, () => {
+    console.log(` Server running on port ${PORT}`);
+  });
+}
+
+startServer();
