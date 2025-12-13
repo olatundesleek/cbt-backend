@@ -14,6 +14,8 @@ import {
   toggleResultReleaseParamSchema,
   getStudentCourseResultsSchema,
   toggleResultReleaseSchema,
+  downloadAllResultsSchema,
+  downloadStudentResultsSchema,
 } from "../validators/result.validator.js";
 
 const router = express.Router();
@@ -52,7 +54,7 @@ router.get(
   "/download",
   authenticate,
   authorizeRoles("ADMIN", "TEACHER"),
-  // validateQuery(getAllResultsSchema),
+  validateQuery(downloadAllResultsSchema),
   resultController.downloadResults
 );
 
@@ -70,7 +72,7 @@ router.get(
   "/student/courses/download",
   authenticate,
   authorizeRoles("STUDENT"),
-  // validateQuery(getStudentCourseResultsSchema),
+  validateQuery(downloadStudentResultsSchema),
   resultController.downloadStudentCourseResults
 );
 

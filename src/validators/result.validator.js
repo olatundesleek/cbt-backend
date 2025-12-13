@@ -44,7 +44,7 @@ export const getAllResultsSchema = Joi.object({
   studentId: Joi.number().integer().positive(),
   testType: Joi.string().valid("Exam", "Test", "Quiz", "Assignment"),
   startDate: Joi.date().iso(),
-  endDate: Joi.date().iso().min(Joi.ref("startDate")),
+  endDate: Joi.date().iso(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   sort: Joi.string()
@@ -60,7 +60,7 @@ export const getAllResultsSchema = Joi.object({
 export const getStudentCourseResultsSchema = Joi.object({
   courseId: Joi.number().integer().positive(), // Optional - filter by specific course
   startDate: Joi.date().iso(),
-  endDate: Joi.date().iso().min(Joi.ref("startDate")),
+  endDate: Joi.date().iso(),
   limit: Joi.number().integer().min(1).max(100).default(10),
   page: Joi.number().integer().min(1).default(1),
   sort: Joi.string()
@@ -71,6 +71,39 @@ export const getStudentCourseResultsSchema = Joi.object({
 }).messages({
   "date.min": "End date must be after start date",
   "any.only": "Test type must be one of: TEST, EXAM, ALL",
+});
+
+// validation for downloading student results - use some of the getStudentCourseResultsSchema
+export const downloadStudentResultsSchema = Joi.object({
+  format: Joi.string().valid("excel", "pdf").default("pdf"),
+  testId: Joi.number().integer().positive(),
+  courseId: Joi.number().integer().positive(),
+  classId: Joi.number().integer().positive(),
+  testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
+  startDate: Joi.date().iso(),
+  limit: Joi.number().integer().min(1).default(1000),
+  page: Joi.number().integer().min(1).default(1),
+  sort: Joi.string(),
+  endDate: Joi.date().iso(),
+}).messages({
+  "date.min": "End date must be after start date",
+});
+
+// download all result filtered validation
+export const downloadAllResultsSchema = Joi.object({
+  format: Joi.string().valid("excel", "pdf").default("pdf"),
+  limit: Joi.number().integer().min(1).default(1000),
+  testId: Joi.number().integer().positive(),
+  courseId: Joi.number().integer().positive(),
+  classId: Joi.number().integer().positive(),
+  studentId: Joi.number().integer().positive(),
+  testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
+  startDate: Joi.date().iso(),
+  endDate: Joi.date().iso(),
+  sort: Joi.string(),
+  order: Joi.string().valid("asc", "desc"),
+}).messages({
+  "date.min": "End date must be after start date",
 });
 
 // Validation for toggling result visibility

@@ -96,7 +96,10 @@ export async function downloadStudentCourseResults(req, res) {
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       );
-      res.setHeader("Content-Disposition", "attachment; filename=results.xlsx");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="student-results.xlsx"'
+      );
       await workbook.xlsx.write(res);
       return res.end();
     }
@@ -104,7 +107,10 @@ export async function downloadStudentCourseResults(req, res) {
     if (format === "pdf") {
       const pdfBuffer = await resultService.generatePDF(results);
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=results.pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="student-results.pdf"'
+      );
       return res.send(pdfBuffer);
     }
 
@@ -120,6 +126,7 @@ export async function downloadResults(req, res) {
     const user = req.user;
 
     const filters = { ...req.query };
+    delete filters.format;
 
     let format = req.query.format;
     format = format ? format.toString().toLowerCase() : "pdf";
@@ -130,7 +137,10 @@ export async function downloadResults(req, res) {
         filters
       );
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=results.pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="results.pdf"'
+      );
       return res.send(pdfBuffer);
     }
 
@@ -143,7 +153,10 @@ export async function downloadResults(req, res) {
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       );
-      res.setHeader("Content-Disposition", "attachment; filename=results.xlsx");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="results.xlsx"'
+      );
       await workbook.xlsx.write(res);
       return res.end();
     }
