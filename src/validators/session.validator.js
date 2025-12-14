@@ -33,3 +33,13 @@ export const submitAnswersSchema = Joi.object({
     .max(2)
     .required(),
 });
+
+export const finishTestSessionSchema = Joi.object({
+  sessionId: Joi.number().integer().min(1).required().messages({
+    "number.base": "Session ID must be a number",
+    "number.min": "Session ID must be at least 1",
+    "any.required": "Session ID is required",
+  }),
+});
+
+export const endAllSessionsSchema = Joi.object({});

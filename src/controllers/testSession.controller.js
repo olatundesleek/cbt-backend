@@ -111,3 +111,12 @@ export async function finishTest(req, res, next) {
     next(err);
   }
 }
+
+export async function endAllSessions(req, res, next) {
+  try {
+    await sessionService.endAllSessions();
+    return success(res, "All sessions ended successfully");
+  } catch (err) {
+    next(err);
+  }
+}

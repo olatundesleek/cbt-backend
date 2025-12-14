@@ -169,6 +169,9 @@ export const fetchDashboardData = async (role, userId) => {
         testCount: await prisma.test.count(),
         classCount: await prisma.class.count(),
         courseCount: await prisma.course.count(),
+        activeSessionCount: await prisma.testSession.count({
+          where: { status: "IN_PROGRESS" },
+        }),
       };
     }
 
