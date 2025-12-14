@@ -1304,6 +1304,22 @@ Response:
 }
 ```
 
+#### End All Sessions
+
+```http
+POST /api/sessions/end-all-sessions
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "All sessions ended successfully",
+  "data": null
+}
+```
+
 #### Profile
 
 # 📘 Profile API
