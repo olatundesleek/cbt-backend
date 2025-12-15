@@ -787,6 +787,7 @@ export async function generatePDF(results) {
         <table>
           <thead>
             <tr>
+            <th>S/N</th>
               <th>Course</th>
               <th>Test</th>
               <th>Score</th>
@@ -800,7 +801,8 @@ export async function generatePDF(results) {
               .map((c) =>
                 c.tests
                   .map(
-                    (t) => `<tr>
+                    (t, index) => `<tr>
+                      <td>${index + 1}</td>
                       <td>${c.course?.title ?? "N/A"}</td>
                       <td>${t.title ?? "N/A"}</td>
                       <td>${
