@@ -313,6 +313,8 @@ export async function getAllResults(user, filters = {}) {
 
   const total = await prisma.testSession.count({ where });
 
+  // console.log("this is the total session minus practice" + total);
+
   let orderBy;
 
   if (sort === "score") {
@@ -409,10 +411,17 @@ export async function getAllResults(user, filters = {}) {
     const totalScore = numericScores.reduce((a, b) => a + b, 0);
     const averageScore = completedTests ? totalScore / completedTests : 0;
     const highestScore = completedTests ? Math.max(...numericScores) : 0;
+    const lowestScore = completedTests ? Math.min(...numericScores) : 0;
 
     return {
       course: c.course,
-      stats: { totalTests, completedTests, averageScore, highestScore },
+      stats: {
+        totalTests,
+        completedTests,
+        averageScore,
+        highestScore,
+        lowestScore,
+      },
       tests: c.tests,
     };
   });
@@ -429,6 +438,7 @@ export async function getAllResults(user, filters = {}) {
       ? allNumericScores.reduce((a, b) => a + b, 0) / allNumericScores.length
       : 0,
     highestScore: allNumericScores.length ? Math.max(...allNumericScores) : 0,
+    lowestScore: allNumericScores.length ? Math.min(...allNumericScores) : 0,
   };
 
   return {
@@ -490,6 +500,7 @@ export async function getStudentCourseResults(user, options = {}) {
         ...(startDate && { startTime: { gte: new Date(startDate) } }),
         ...(endDate && { endTime: { lte: new Date(endDate) } }),
       },
+      test: { type: { not: "PRACTICE" } },
     },
   });
 

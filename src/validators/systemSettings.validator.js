@@ -14,7 +14,7 @@ export const updateSystemSettingsSchema = Joi.object({
         originalname: Joi.string(),
       }).unknown(true)
     )
-    .try(Joi.valid(null))
+    .try(Joi.valid("null"))
     .optional(),
   favicon: Joi.alternatives()
     .try(
@@ -23,7 +23,7 @@ export const updateSystemSettingsSchema = Joi.object({
         originalname: Joi.string(),
       }).unknown(true)
     )
-    .try(Joi.valid(null))
+    .try(Joi.valid("null"))
     .optional(),
   loginBanner: Joi.alternatives()
     .try(
@@ -32,6 +32,6 @@ export const updateSystemSettingsSchema = Joi.object({
         originalname: Joi.string(),
       }).unknown(true)
     )
-    .try(Joi.valid(null))
+    .try(Joi.valid("null"))
     .optional(),
 });
