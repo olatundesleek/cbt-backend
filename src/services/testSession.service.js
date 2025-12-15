@@ -39,12 +39,8 @@ export async function endSessionByTimer(sessionId, reason = "duration") {
         score,
         reason,
       });
-    } catch {
-      console.warn("Socket not initialized or not connected.");
-    }
-  } catch (e) {
-    console.error("Error ending session by timer:", e);
-  }
+    } catch {}
+  } catch (e) {}
 }
 
 export async function startSession({ studentId, testId }) {
@@ -194,9 +190,7 @@ export async function startSession({ studentId, testId }) {
       getIo()
         .to(`session_${session.id}`)
         .emit("test_started", { sessionId: session.id, testId });
-    } catch (err) {
-      console.warn("Socket/timer setup failed:", err);
-    }
+    } catch (err) {}
 
     const questions = shuffled.slice(0, 2).map((q, i) => ({
       id: q.id,
@@ -216,7 +210,6 @@ export async function startSession({ studentId, testId }) {
       progress: { answeredCount: 0, total: allQuestions.length },
     };
   } catch (error) {
-    console.error("Error in startSession:", error);
     throw Object.assign(new Error("Failed to start test session"), {
       statusCode: 400,
       details: error.message,
@@ -292,7 +285,6 @@ export async function fetchQuestionsByNumber({
       progress: { answeredCount, total: shuffled.length },
     };
   } catch (error) {
-    console.error("Error in fetchQuestionsByNumber:", error);
     throw Object.assign(new Error("Failed to fetch questions"), {
       statusCode: 400,
       details: error.message,
@@ -500,7 +492,6 @@ export async function submitAnswerAndGetPrevious({
       progress: { answeredCount, total: shuffled.length },
     };
   } catch (error) {
-    console.error("Error in submitAnswerAndGetPrevious:", error);
     throw Object.assign(new Error("Failed to submit and get previous"), {
       statusCode: 400,
       details: error.message,
@@ -562,7 +553,6 @@ export async function finishSession({ sessionId, studentId }) {
       type: updated.test.type,
     };
   } catch (error) {
-    console.error("Error finishing session:", error);
     throw Object.assign(new Error("Failed to finish session"), {
       statusCode: 400,
       details: error.message,

@@ -313,8 +313,6 @@ export async function getAllResults(user, filters = {}) {
 
   const total = await prisma.testSession.count({ where });
 
-  // console.log("this is the total session minus practice" + total);
-
   let orderBy;
 
   if (sort === "score") {
@@ -470,7 +468,6 @@ export async function getStudentCourseResults(user, options = {}) {
     order = "desc",
   } = options;
 
-  console.log("this is the testType" + testType);
   // === Fetch student with class info ===
   const student = await prisma.user.findUnique({
     where: { id: user.id },
@@ -540,8 +537,6 @@ export async function getStudentCourseResults(user, options = {}) {
     take: limit,
   });
 
-  console.log("this is the total that sending sessions" + sessions.length);
-
   if (!sessions.length) {
     return {
       student: {
@@ -608,8 +603,6 @@ export async function getStudentCourseResults(user, options = {}) {
     const gradedScores = limitedSessions
       .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
       .map((s) => Number(s.score) || 0);
-    console.log("this is the graded scores" + gradedScores);
-    console.log("this is the graded scores lenght" + gradedScores.length);
 
     const averageScore = gradedScores.length
       ? gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length
@@ -649,7 +642,7 @@ export async function getStudentCourseResults(user, options = {}) {
           },
         };
       });
-    console.log("this is the test results" + testResults.length);
+
     return {
       course: {
         id: course.id,
@@ -661,6 +654,12 @@ export async function getStudentCourseResults(user, options = {}) {
     };
   });
 
+  const totalResult = sessions
+    .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
+    .map((s) => Number(s.score) || 0);
+
+  const averageScore =
+    totalResult.reduce((a, b) => a + b, 0) / totalResult.length;
   // === Overall stats ===
   const overallStats = {
     totalCourses: results.length,
@@ -670,7 +669,7 @@ export async function getStudentCourseResults(user, options = {}) {
       ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
         results.length
       : 0,
-    averageScore: results.reduce((sum, r) => sum + r.stats.averageScore, 0),
+    averageScore: averageScore.toFixed(2),
   };
 
   return {
@@ -720,8 +719,7 @@ export async function generatePDF(results) {
       if (!isNaN(score)) totalScores.push(score);
     });
   });
-  console.log("this is the total scores" + totalScores.length);
-  console.log("this is the total scores" + totalScores);
+
   const averageScore =
     totalScores.length > 0
       ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
@@ -827,14 +825,11 @@ export async function generatePDF(results) {
               )
               .join("")}
           </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2">Average Score</td>
-              <td colspan="4">${averageScore}</td>
-            </tr>
-          </tfoot>
+         
         </table>
-
+<div style="margin-top: 20px; font-weight: 600; text-align: right;">
+  Average Score: ${averageScore}
+</div>
         <div class="footer">
           Generated automatically by CBT System &copy; ${new Date().getFullYear()}
         </div>

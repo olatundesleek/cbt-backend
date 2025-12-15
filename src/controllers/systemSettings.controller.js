@@ -6,7 +6,6 @@ import { success } from "../utils/response.js";
 
 export const getSystemSettings = async (req, res, next) => {
   try {
-    console.log("Fetched system settings:");
     const settings = await getSettingsService();
 
     if (!settings) {

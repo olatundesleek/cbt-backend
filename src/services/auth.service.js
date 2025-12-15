@@ -76,7 +76,6 @@ export async function login({ username, password }) {
 export async function changeUserPassword(id, newPassword) {
   try {
     const userId = parseInt(id, 10);
-    console.log("The id is " + userId);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -107,7 +106,6 @@ export async function changeUserPassword(id, newPassword) {
       user,
     };
   } catch (error) {
-    console.error("Error changing user password:", error);
     throw error;
   }
 }
@@ -115,12 +113,6 @@ export async function changeUserPassword(id, newPassword) {
 export async function deleteUser(currentUser, id) {
   try {
     const userId = parseInt(id, 10);
-
-    console.log("this is the current user" + currentUser);
-    console.log("this is the  user to be deleted" + id);
-
-    console.log(typeof currentUser);
-    console.log(typeof id);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

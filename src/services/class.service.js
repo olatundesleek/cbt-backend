@@ -41,7 +41,6 @@ export const createClass = async (className, teacherId, courses = []) => {
 
     return newClass;
   } catch (error) {
-    console.error("Prisma error:", error);
     throw error;
   }
 };
@@ -79,7 +78,6 @@ export const updateClass = async (
 
     return updatedClass;
   } catch (error) {
-    console.error("Prisma error:", error);
     throw error;
   }
 };
@@ -361,7 +359,6 @@ export const getClassesForUser = async (user, options = {}) => {
 
     throw new Error("Invalid role");
   } catch (error) {
-    console.error("Error fetching classes for user:", error);
     throw error;
   }
 };

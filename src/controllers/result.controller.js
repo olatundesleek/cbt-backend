@@ -116,7 +116,6 @@ export async function downloadStudentCourseResults(req, res) {
 
     return res.status(400).json({ error: "Invalid format. Use pdf or excel." });
   } catch (err) {
-    console.error(err);
     return res.status(500).json({ error: "Failed to generate download." });
   }
 }
@@ -163,7 +162,6 @@ export async function downloadResults(req, res) {
 
     return res.status(400).json({ error: "Invalid format. Use pdf or excel." });
   } catch (err) {
-    console.error(err);
     return res.status(500).json({ error: "Failed to generate download." });
   }
 }

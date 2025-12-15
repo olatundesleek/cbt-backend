@@ -565,7 +565,6 @@ export const deleteTest = async (testId, user) => {
       where: { id: parseInt(testId) },
     });
   } catch (error) {
-    console.error(error);
     error.message = "Unable to delete test";
     throw error;
   }

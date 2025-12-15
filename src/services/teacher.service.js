@@ -90,7 +90,6 @@ export const assignClassTeacher = async (teacherId, classId, requester) => {
 
     return updated;
   } catch (error) {
-    console.error("Error assigning class teacher:", error);
     throw error;
   }
 };
