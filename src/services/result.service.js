@@ -496,8 +496,8 @@ export async function getStudentCourseResults(user, options = {}) {
         ...(testType !== "ALL" && { type: testType.toUpperCase() }),
         ...(startDate && { startTime: { gte: new Date(startDate) } }),
         ...(endDate && { endTime: { lte: new Date(endDate) } }),
+        NOT: { type: "PRACTICE" }, // use NOT for exclusion
       },
-      test: { type: { not: "PRACTICE" } },
     },
   });
 
@@ -525,8 +525,8 @@ export async function getStudentCourseResults(user, options = {}) {
         ...(testType !== "ALL" && { type: testType.toUpperCase() }),
         ...(startDate && { startTime: { gte: new Date(startDate) } }),
         ...(endDate && { endTime: { lte: new Date(endDate) } }),
+        NOT: { type: "PRACTICE" }, // use NOT for exclusion
       },
-      test: { type: { not: "PRACTICE" } },
     },
     orderBy,
     include: {
