@@ -24,7 +24,6 @@ export async function assignClassTeacher(req, res, next) {
   try {
     const { classId } = req.params;
     const { teacherId } = req.body;
-    console.log("Assigning class:", classId, "to teacher:", teacherId);
 
     const updated = await teacherService.assignClassTeacher(
       teacherId,

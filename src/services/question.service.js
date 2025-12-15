@@ -83,7 +83,6 @@ export const createQuestion = async (data, user) => {
 
     return result;
   } catch (error) {
-    console.error("Error creating question(s):", error);
     throw error;
   }
 };
@@ -98,9 +97,7 @@ const invalidateQuestionCaches = (bankId = null) => {
       cacheManager.invalidate(`questions_bank_${bankId}`);
     }
     cacheManager.invalidate("all_question_banks");
-  } catch (err) {
-    console.warn("Could not invalidate question caches:", err.message);
-  }
+  } catch (err) {}
 };
 
 export const getQuestionById = async (questionId, user) => {
@@ -234,7 +231,6 @@ export const uploadQuestionsFromCsv = async (filePath, bankId, user) => {
 
     return createdQuestions;
   } catch (error) {
-    console.error("Error uploading questions from CSV:", error);
     throw error;
   }
 };

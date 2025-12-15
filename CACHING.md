@@ -90,9 +90,7 @@ const invalidateQuestionCaches = (bankId = null) => {
       cacheManager.invalidate(`questions_bank_${bankId}`);
     }
     cacheManager.invalidate("all_question_banks");
-  } catch (err) {
-    console.warn("Could not invalidate question caches:", err.message);
-  }
+  } catch (err) {}
 };
 ```
 
@@ -137,7 +135,6 @@ try {
     cacheManager.set(cacheKey, data, ttl);
   } catch (err) {
     // If caching fails, still return data
-    console.warn("Caching failed, but returning data");
   }
 
   return data;
@@ -196,9 +193,7 @@ export const getSomethingService = () => {
 const invalidateSomethingCache = () => {
   try {
     cacheManager.invalidate("my_cache_key");
-  } catch (err) {
-    console.warn("Could not invalidate cache:", err.message);
-  }
+  } catch (err) {}
 };
 
 // Then call invalidateSomethingCache() after mutations

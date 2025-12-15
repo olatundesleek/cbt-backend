@@ -161,7 +161,5 @@ export const invalidateSystemSettingsCache = async () => {
   try {
     const cacheManager = (await import("../utils/cache.js")).default;
     cacheManager.invalidate("system_settings");
-  } catch (err) {
-    console.warn("Could not invalidate cache:", err.message);
-  }
+  } catch (err) {}
 };

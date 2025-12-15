@@ -165,7 +165,6 @@ export const assignStudentToClass = async (studentId, classId, requester) => {
 
     return updated;
   } catch (error) {
-    console.error("Error assigning student to class:", error);
     throw error;
   }
 };

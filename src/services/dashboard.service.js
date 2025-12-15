@@ -291,7 +291,6 @@ export const fetchDashboardData = async (role, userId) => {
 
     return dashboardData;
   } catch (error) {
-    console.error("Error fetching dashboard data:", error);
     throw error;
   }
 };

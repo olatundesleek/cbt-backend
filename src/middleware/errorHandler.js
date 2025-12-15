@@ -1,8 +1,6 @@
 import { error } from "../utils/response.js";
 
 export const errorHandler = (err, req, res, next) => {
-  console.error("💥 Error caught:", err);
-
   if (res.headersSent) return next(err);
 
   // Prisma known errors

@@ -14,11 +14,10 @@ export async function authenticate(req, res, next) {
       }
     }
 
-    console.log("Authenticating with token:", token);
     if (!token) return res.status(401).send("No token");
 
     const payload = verifyToken(token);
-    console.log("Token payload:", payload);
+
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
     if (!user) return res.status(401).send("User not found");
     req.user = user;

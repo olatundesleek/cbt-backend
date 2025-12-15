@@ -39,7 +39,6 @@ export const createCourse = async (title, description, teacherId, userRole) => {
 
     return newCourse;
   } catch (error) {
-    console.error("Prisma error:", error);
     throw error;
   }
 };
@@ -81,7 +80,6 @@ export const updateCourse = async (courseId, title, description, teacherId) => {
 
     return updatedCourse;
   } catch (error) {
-    console.error("Prisma error:", error);
     throw error;
   }
 };
@@ -112,7 +110,6 @@ export const deleteCourse = async (courseId) => {
     // 3. Delete the course (question banks will automatically set courseId to null)
     await prisma.course.delete({ where: { id } });
 
-    console.log(`Course ${id} deleted successfully.`);
     return { deletedCourseId: id };
   } catch (error) {
     throw error;
@@ -293,7 +290,6 @@ export const updateClass = async (
 
     return updatedClass;
   } catch (error) {
-    console.error("Prisma error:", error);
     throw error;
   }
 };
