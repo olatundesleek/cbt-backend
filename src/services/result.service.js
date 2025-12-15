@@ -529,6 +529,7 @@ export async function getStudentCourseResults(user, options = {}) {
         ...(startDate && { startTime: { gte: new Date(startDate) } }),
         ...(endDate && { endTime: { lte: new Date(endDate) } }),
       },
+      test: { type: { not: "PRACTICE" } },
     },
     orderBy,
     include: {
@@ -538,6 +539,8 @@ export async function getStudentCourseResults(user, options = {}) {
     skip: (page - 1) * limit,
     take: limit,
   });
+
+  console.log("this is the total that sending sessions" + sessions.length);
 
   if (!sessions.length) {
     return {
@@ -586,9 +589,11 @@ export async function getStudentCourseResults(user, options = {}) {
       (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
     );
 
-    const limitedSessions = testLimit
-      ? sortedSessions.slice(0, testLimit)
-      : sortedSessions;
+    // const limitedSessions = testLimit
+    //   ? sortedSessions.slice(0, testLimit)
+    //   : sortedSessions;
+
+    const limitedSessions = sortedSessions;
 
     // Stats: total tests & completed tests (exclude practice)
     const totalTests = sessions.filter(
@@ -603,6 +608,8 @@ export async function getStudentCourseResults(user, options = {}) {
     const gradedScores = limitedSessions
       .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
       .map((s) => Number(s.score) || 0);
+    console.log("this is the graded scores" + gradedScores);
+    console.log("this is the graded scores lenght" + gradedScores.length);
 
     const averageScore = gradedScores.length
       ? gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length
@@ -642,7 +649,7 @@ export async function getStudentCourseResults(user, options = {}) {
           },
         };
       });
-
+    console.log("this is the test results" + testResults.length);
     return {
       course: {
         id: course.id,
@@ -659,10 +666,11 @@ export async function getStudentCourseResults(user, options = {}) {
     totalCourses: results.length,
     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-    averageScore: results.length
+    overallAverageScore: results.length
       ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
         results.length
       : 0,
+    averageScore: results.reduce((sum, r) => sum + r.stats.averageScore, 0),
   };
 
   return {
@@ -712,7 +720,8 @@ export async function generatePDF(results) {
       if (!isNaN(score)) totalScores.push(score);
     });
   });
-
+  console.log("this is the total scores" + totalScores.length);
+  console.log("this is the total scores" + totalScores);
   const averageScore =
     totalScores.length > 0
       ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
