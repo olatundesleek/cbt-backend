@@ -81,7 +81,7 @@ export const downloadStudentResultsSchema = Joi.object({
   classId: Joi.number().integer().positive(),
   testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
   startDate: Joi.date().iso(),
-  limit: Joi.number().integer().min(1).default(1000),
+  limit: Joi.number().integer().min(1).default(10000),
   page: Joi.number().integer().min(1).default(1),
   sort: Joi.string(),
   endDate: Joi.date().iso(),
@@ -92,7 +92,7 @@ export const downloadStudentResultsSchema = Joi.object({
 // download all result filtered validation
 export const downloadAllResultsSchema = Joi.object({
   format: Joi.string().valid("excel", "pdf").default("pdf"),
-  limit: Joi.number().integer().min(1).default(1000),
+  limit: Joi.number().integer().min(1).default(10000),
   testId: Joi.number().integer().positive(),
   courseId: Joi.number().integer().positive(),
   classId: Joi.number().integer().positive(),
