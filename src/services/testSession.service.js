@@ -300,26 +300,38 @@ export async function submitAnswerOnly({
   questionId,
   selectedOption,
 }) {
-  const question = await prisma.question.findUnique({
-    where: { id: questionId },
-  });
-  if (!question) throw new Error("Question not found");
-
-  const isCorrect =
-    question.answer.trim().toLowerCase() ===
-    selectedOption.trim().toLowerCase();
-  const existing = await prisma.answer.findFirst({
-    where: { testSessionId: sessionId, questionId },
-  });
-
-  if (existing) {
-    await prisma.answer.update({
-      where: { id: existing.id },
-      data: { selectedOption, isCorrect, createdAt: new Date() },
+  try {
+    const question = await prisma.question.findUnique({
+      where: { id: questionId },
     });
-  } else {
-    await prisma.answer.create({
-      data: { testSessionId: sessionId, questionId, selectedOption, isCorrect },
+    if (!question) throw new Error("Question not found");
+
+    const isCorrect =
+      question.answer.trim().toLowerCase() ===
+      selectedOption.trim().toLowerCase();
+    const existing = await prisma.answer.findFirst({
+      where: { testSessionId: sessionId, questionId },
+    });
+
+    if (existing) {
+      await prisma.answer.update({
+        where: { id: existing.id },
+        data: { selectedOption, isCorrect, createdAt: new Date() },
+      });
+    } else {
+      await prisma.answer.create({
+        data: {
+          testSessionId: sessionId,
+          questionId,
+          selectedOption,
+          isCorrect,
+        },
+      });
+    }
+  } catch (error) {
+    throw Object.assign(new Error("Failed to submit answer"), {
+      statusCode: error.status || 500,
+      details: error.message,
     });
   }
 }
@@ -337,13 +349,20 @@ export async function submitAnswerAndGetNext({
     where: { id: sessionId },
     include: { test: { include: { bank: true } } },
   });
-  if (
-    !session ||
-    session.studentId !== studentId ||
-    session.endedAt ||
-    session.status === "COMPLETED"
-  ) {
-    throw new Error("Session not accessible");
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  if (session.studentId !== studentId) {
+    throw new Error("Session does not belong to this student");
+  }
+
+  if (session.endedAt) {
+    throw new Error("Session has already ended");
+  }
+
+  if (session.status === "COMPLETED") {
+    throw new Error("Session is already completed");
   }
 
   const allQuestions = await getCachedOrFetch(
