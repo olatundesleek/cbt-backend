@@ -451,6 +451,248 @@ export async function getAllResults(user, filters = {}) {
   };
 }
 
+// export async function getStudentCourseResults(user, options = {}) {
+//   if (user.role !== "STUDENT") {
+//     throw new Error("Only students can access this endpoint");
+//   }
+
+//   const {
+//     courseId,
+//     startDate,
+//     endDate,
+//     testType = "ALL",
+//     page = 1,
+//     limit = 10,
+//     sort = "date",
+//     order = "desc",
+//   } = options;
+
+//   // === Fetch student with class info ===
+//   const student = await prisma.user.findUnique({
+//     where: { id: user.id },
+//     select: {
+//       id: true,
+//       firstname: true,
+//       lastname: true,
+//       username: true,
+//       class: {
+//         select: {
+//           id: true,
+//           className: true,
+//         },
+//       },
+//     },
+//   });
+
+//   if (!student.class) throw new Error("Student not assigned to any class");
+
+//   // === Count total sessions ===
+//   const totalSessions = await prisma.testSession.count({
+//     where: {
+//       studentId: user.id,
+//       test: {
+//         ...(courseId && { courseId: parseInt(courseId) }),
+//         ...(testType !== "ALL" && { type: testType.toUpperCase() }),
+//         ...(startDate && { startTime: { gte: new Date(startDate) } }),
+//         ...(endDate && { endTime: { lte: new Date(endDate) } }),
+//         NOT: { type: "PRACTICE" }, // use NOT for exclusion
+//       },
+//     },
+//   });
+
+//   // === Determine sorting ===
+//   let orderBy;
+//   if (sort === "score") {
+//     orderBy = [{ score: order }];
+//   } else if (sort === "date") {
+//     orderBy = [{ startedAt: order }];
+//   } else if (sort === "student") {
+//     orderBy = [{ student: { firstname: order } }];
+//   } else if (sort === "course") {
+//     orderBy = [{ test: { course: { title: order } } }];
+//   } else {
+//     // Default: sort by latest endedAt
+//     orderBy = [{ endedAt: "desc" }];
+//   }
+
+//   // === Fetch all sessions with filters ===
+//   const sessions = await prisma.testSession.findMany({
+//     where: {
+//       studentId: user.id,
+//       test: {
+//         ...(courseId && { courseId: parseInt(courseId) }),
+//         ...(testType !== "ALL" && { type: testType.toUpperCase() }),
+//         ...(startDate && { startTime: { gte: new Date(startDate) } }),
+//         ...(endDate && { endTime: { lte: new Date(endDate) } }),
+//         NOT: { type: "PRACTICE" }, // use NOT for exclusion
+//       },
+//     },
+//     orderBy,
+//     include: {
+//       test: { include: { course: true } },
+//       answers: { include: { question: true } },
+//     },
+//     skip: (page - 1) * limit,
+//     take: limit,
+//   });
+
+//   if (!sessions.length) {
+//     return {
+//       student: {
+//         id: student.id,
+//         name: `${student.firstname} ${student.lastname}`,
+//         class: { id: student.class.id, className: student.class.className },
+//       },
+//       courses: [],
+//       overallStats: {
+//         totalCourses: 0,
+//         totalTests: 0,
+//         testsCompleted: 0,
+//         averageScore: 0,
+//       },
+//       pagination: {
+//         page,
+//         limit,
+//         total: totalSessions,
+//         pages: Math.ceil(totalSessions / limit),
+//       },
+//     };
+//   }
+
+//   // === Helper to determine if session is hidden ===
+//   const isHiddenSession = (session) => {
+//     const type = session.test.type.toUpperCase();
+//     if (type === "PRACTICE") return true; // Always hide practice
+//     if ((type === "TEST" || type === "EXAM") && !session.test.showResult)
+//       return true;
+//     return false;
+//   };
+
+//   // === Group sessions by course ===
+//   const resultsByCourse = {};
+//   sessions.forEach((session) => {
+//     const cId = session.test.course.id;
+//     if (!resultsByCourse[cId])
+//       resultsByCourse[cId] = { course: session.test.course, sessions: [] };
+//     resultsByCourse[cId].sessions.push(session);
+//   });
+
+//   // === Build course results ===
+//   // const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
+//   //   const sortedSessions = [...sessions].sort(
+//   //     (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
+//   //   );
+
+//   const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
+//     const sortedSessions = [...sessions].sort(
+//       (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
+//     );
+
+//     // const limitedSessions = testLimit
+//     //   ? sortedSessions.slice(0, testLimit)
+//     //   : sortedSessions;
+
+//     const limitedSessions = sortedSessions;
+
+//     // Stats: total tests & completed tests (exclude practice)
+//     const totalTests = sessions.filter(
+//       (s) => s.test.type.toUpperCase() !== "PRACTICE"
+//     ).length;
+//     const completedTests = sessions.filter(
+//       (s) =>
+//         s.test.type.toUpperCase() !== "PRACTICE" && s.status === "COMPLETED"
+//     ).length;
+
+//     // Scores for average calculation (only completed, visible)
+//     const gradedScores = limitedSessions
+//       .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
+//       .map((s) => Number(s.score) || 0);
+
+//     const averageScore = gradedScores.length
+//       ? gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length
+//       : 0;
+
+//     // Map test results
+//     const testResults = limitedSessions
+//       .filter((s) => s.test.type.toUpperCase() !== "PRACTICE") // never return practice
+//       .map((session) => {
+//         const type = session.test.type.toUpperCase();
+//         const inProgress = session.status === "IN_PROGRESS";
+//         const hidden = isHiddenSession(session);
+
+//         let score = session.score;
+//         let status = session.status;
+
+//         if (hidden || inProgress) {
+//           score = "unreleased";
+//           status = inProgress ? "IN_PROGRESS" : "unreleased";
+//         } else if (session.status === "COMPLETED") {
+//           const numericScore = Number(session.score);
+//           const passMark = Number(session.test.passMark);
+//           if (isNaN(numericScore)) status = "ungraded";
+//           else status = numericScore >= passMark ? "PASSED" : "FAILED";
+//         }
+
+//         return {
+//           id: session.test.id,
+//           title: session.test.title,
+//           type: session.test.type,
+//           session: {
+//             id: session.id,
+//             score,
+//             status,
+//             startedAt: session.startedAt,
+//             endedAt: session.endedAt,
+//           },
+//         };
+//       });
+
+//     return {
+//       course: {
+//         id: course.id,
+//         title: course.title,
+//         description: course.description,
+//       },
+//       stats: { totalTests, completedTests, averageScore },
+//       tests: testResults,
+//     };
+//   });
+
+//   const totalResult = sessions
+//     .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
+//     .map((s) => Number(s.score) || 0);
+
+//   const averageScore =
+//     totalResult.reduce((a, b) => a + b, 0) / totalResult.length;
+//   // === Overall stats ===
+//   const overallStats = {
+//     totalCourses: results.length,
+//     totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
+//     testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
+//     overallAverageScore: results.length
+//       ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
+//         results.length
+//       : 0,
+//     averageScore: averageScore.toFixed(2),
+//   };
+
+//   return {
+//     student: {
+//       id: student.id,
+//       name: `${student.firstname} ${student.lastname}`,
+//       class: { id: student.class.id, className: student.class.className },
+//     },
+//     courses: results,
+//     overallStats,
+//     pagination: {
+//       page,
+//       limit,
+//       total: totalSessions,
+//       pages: Math.ceil(totalSessions / limit),
+//     },
+//   };
+// }
+
 export async function getStudentCourseResults(user, options = {}) {
   if (user.role !== "STUDENT") {
     throw new Error("Only students can access this endpoint");
@@ -460,12 +702,11 @@ export async function getStudentCourseResults(user, options = {}) {
     courseId,
     startDate,
     endDate,
-    testLimit = 10,
     testType = "ALL",
     page = 1,
-    limit = 10,
     sort = "date",
     order = "desc",
+    limit = 10,
   } = options;
 
   // === Fetch student with class info ===
@@ -476,67 +717,68 @@ export async function getStudentCourseResults(user, options = {}) {
       firstname: true,
       lastname: true,
       username: true,
-      class: {
-        select: {
-          id: true,
-          className: true,
-        },
-      },
+      class: { select: { id: true, className: true } },
     },
   });
 
   if (!student.class) throw new Error("Student not assigned to any class");
 
-  // === Count total sessions ===
+  // === Count total sessions (excluding PRACTICE) ===
   const totalSessions = await prisma.testSession.count({
     where: {
       studentId: user.id,
       test: {
         ...(courseId && { courseId: parseInt(courseId) }),
         ...(testType !== "ALL" && { type: testType.toUpperCase() }),
-        ...(startDate && { startTime: { gte: new Date(startDate) } }),
-        ...(endDate && { endTime: { lte: new Date(endDate) } }),
-        NOT: { type: "PRACTICE" }, // use NOT for exclusion
+        NOT: { type: "PRACTICE" },
       },
+      ...(startDate && { startedAt: { gte: new Date(startDate) } }),
+      ...(endDate && {
+        endedAt: {
+          lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+        },
+      }),
     },
   });
 
-  // === Determine sorting ===
+  // === Determine ordering ===
   let orderBy;
   if (sort === "score") {
-    orderBy = [{ score: order }];
+    orderBy = { score: order };
   } else if (sort === "date") {
-    orderBy = [{ startedAt: order }];
-  } else if (sort === "student") {
-    orderBy = [{ student: { firstname: order } }];
+    orderBy = [{ endedAt: order }, { startedAt: order }];
   } else if (sort === "course") {
-    orderBy = [{ test: { course: { title: order } } }];
+    orderBy = { test: { course: { title: order } } };
   } else {
-    // Default: sort by latest endedAt
-    orderBy = [{ endedAt: "desc" }];
+    orderBy = [{ endedAt: "desc" }]; // default: most recent sessions first
   }
 
-  // === Fetch all sessions with filters ===
+  // === Fetch sessions ===
   const sessions = await prisma.testSession.findMany({
     where: {
       studentId: user.id,
       test: {
         ...(courseId && { courseId: parseInt(courseId) }),
         ...(testType !== "ALL" && { type: testType.toUpperCase() }),
-        ...(startDate && { startTime: { gte: new Date(startDate) } }),
-        ...(endDate && { endTime: { lte: new Date(endDate) } }),
-        NOT: { type: "PRACTICE" }, // use NOT for exclusion
+        NOT: { type: "PRACTICE" },
       },
+      ...(startDate && { startedAt: { gte: new Date(startDate) } }),
+      ...(endDate && {
+        endedAt: {
+          lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+        },
+      }),
     },
-    orderBy,
     include: {
       test: { include: { course: true } },
       answers: { include: { question: true } },
     },
+    orderBy,
     skip: (page - 1) * limit,
     take: limit,
   });
 
+  // === Handle empty result ===
   if (!sessions.length) {
     return {
       student: {
@@ -544,12 +786,11 @@ export async function getStudentCourseResults(user, options = {}) {
         name: `${student.firstname} ${student.lastname}`,
         class: { id: student.class.id, className: student.class.className },
       },
-      courses: [],
+      results: [],
       overallStats: {
-        totalCourses: 0,
         totalTests: 0,
         testsCompleted: 0,
-        averageScore: 0,
+        averageScore: "0.00",
       },
       pagination: {
         page,
@@ -560,125 +801,85 @@ export async function getStudentCourseResults(user, options = {}) {
     };
   }
 
-  // === Helper to determine if session is hidden ===
+  // === Helper: hidden session logic ===
   const isHiddenSession = (session) => {
     const type = session.test.type.toUpperCase();
-    if (type === "PRACTICE") return true; // Always hide practice
+    if (type === "PRACTICE") return true;
     if ((type === "TEST" || type === "EXAM") && !session.test.showResult)
       return true;
     return false;
   };
 
-  // === Group sessions by course ===
-  const resultsByCourse = {};
-  sessions.forEach((session) => {
-    const cId = session.test.course.id;
-    if (!resultsByCourse[cId])
-      resultsByCourse[cId] = { course: session.test.course, sessions: [] };
-    resultsByCourse[cId].sessions.push(session);
-  });
+  // === Build flat results array ===
+  const results = sessions
+    .filter((s) => s.test.type.toUpperCase() !== "PRACTICE")
+    .map((session) => {
+      const hidden = isHiddenSession(session);
+      const inProgress = session.status === "IN_PROGRESS";
 
-  // === Build course results ===
-  const results = Object.values(resultsByCourse).map(({ course, sessions }) => {
-    const sortedSessions = [...sessions].sort(
-      (a, b) => new Date(b.startedAt) - new Date(a.startedAt)
-    );
+      let score = session.score;
+      let status = session.status;
 
-    // const limitedSessions = testLimit
-    //   ? sortedSessions.slice(0, testLimit)
-    //   : sortedSessions;
+      if (hidden || inProgress) {
+        score = "unreleased";
+        status = inProgress ? "IN_PROGRESS" : "unreleased";
+      } else if (session.status === "COMPLETED") {
+        const numericScore = Number(session.score);
+        const passMark = Number(session.test.passMark);
+        status = isNaN(numericScore)
+          ? "ungraded"
+          : numericScore >= passMark
+          ? "PASSED"
+          : "FAILED";
+      }
 
-    const limitedSessions = sortedSessions;
-
-    // Stats: total tests & completed tests (exclude practice)
-    const totalTests = sessions.filter(
-      (s) => s.test.type.toUpperCase() !== "PRACTICE"
-    ).length;
-    const completedTests = sessions.filter(
-      (s) =>
-        s.test.type.toUpperCase() !== "PRACTICE" && s.status === "COMPLETED"
-    ).length;
-
-    // Scores for average calculation (only completed, visible)
-    const gradedScores = limitedSessions
-      .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
-      .map((s) => Number(s.score) || 0);
-
-    const averageScore = gradedScores.length
-      ? gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length
-      : 0;
-
-    // Map test results
-    const testResults = limitedSessions
-      .filter((s) => s.test.type.toUpperCase() !== "PRACTICE") // never return practice
-      .map((session) => {
-        const type = session.test.type.toUpperCase();
-        const inProgress = session.status === "IN_PROGRESS";
-        const hidden = isHiddenSession(session);
-
-        let score = session.score;
-        let status = session.status;
-
-        if (hidden || inProgress) {
-          score = "unreleased";
-          status = inProgress ? "IN_PROGRESS" : "unreleased";
-        } else if (session.status === "COMPLETED") {
-          const numericScore = Number(session.score);
-          const passMark = Number(session.test.passMark);
-          if (isNaN(numericScore)) status = "ungraded";
-          else status = numericScore >= passMark ? "PASSED" : "FAILED";
-        }
-
-        return {
+      return {
+        course: {
+          id: session.test.course.id,
+          title: session.test.course.title,
+          description: session.test.course.description,
+        },
+        test: {
           id: session.test.id,
           title: session.test.title,
           type: session.test.type,
-          session: {
-            id: session.id,
-            score,
-            status,
-            startedAt: session.startedAt,
-            endedAt: session.endedAt,
-          },
-        };
-      });
+        },
+        session: {
+          id: session.id,
+          score,
+          status,
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+        },
+      };
+    });
 
-    return {
-      course: {
-        id: course.id,
-        title: course.title,
-        description: course.description,
-      },
-      stats: { totalTests, completedTests, averageScore },
-      tests: testResults,
-    };
-  });
+  // === Compute overall stats ===
+  const completedSessions = sessions.filter(
+    (s) => !isHiddenSession(s) && s.status === "COMPLETED"
+  );
 
-  const totalResult = sessions
-    .filter((s) => !isHiddenSession(s) && s.status === "COMPLETED")
-    .map((s) => Number(s.score) || 0);
-
-  const averageScore =
-    totalResult.reduce((a, b) => a + b, 0) / totalResult.length;
-  // === Overall stats ===
   const overallStats = {
-    totalCourses: results.length,
-    totalTests: results.reduce((sum, r) => sum + r.stats.totalTests, 0),
-    testsCompleted: results.reduce((sum, r) => sum + r.stats.completedTests, 0),
-    overallAverageScore: results.length
-      ? results.reduce((sum, r) => sum + r.stats.averageScore, 0) /
-        results.length
-      : 0,
-    averageScore: averageScore.toFixed(2),
+    totalTests: results.length,
+    testsCompleted: completedSessions.length,
+    averageScore: completedSessions.length
+      ? (
+          completedSessions.reduce(
+            (sum, s) => sum + (Number(s.score) || 0),
+            0
+          ) / completedSessions.length
+        ).toFixed(2)
+      : "0.00",
   };
 
+  // === Return final response ===
   return {
     student: {
       id: student.id,
       name: `${student.firstname} ${student.lastname}`,
       class: { id: student.class.id, className: student.class.className },
     },
-    courses: results,
+    results,
     overallStats,
     pagination: {
       page,
@@ -710,15 +911,144 @@ export async function toggleResultRelease(testId, showResult, user) {
   return updated;
 }
 
+// export async function generatePDF(results) {
+//   // Calculate average safely (ignore unreleased scores)
+//   const totalScores = [];
+//   results.courses.forEach((c) => {
+//     c.tests.forEach((t) => {
+//       const score = Number(t.session?.score);
+//       if (!isNaN(score)) totalScores.push(score);
+//     });
+//   });
+
+//   const averageScore =
+//     totalScores.length > 0
+//       ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(2)
+//       : "N/A";
+
+//   // Build HTML
+//   const html = `
+//     <html>
+//     <head>
+//       <style>
+//         /* Reset */
+//         body, h1, h2, p, table { margin: 0; padding: 0; }
+//         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f6fa; color: #2c3e50; padding: 40px; }
+
+//         /* Container */
+//         .container { max-width: 900px; margin: auto; background: #fff; padding: 40px 30px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
+
+//         /* Header */
+//         .header { text-align: center; margin-bottom: 30px; }
+//         .header h1 { font-size: 30px; color: #34495e; letter-spacing: 1px; }
+//         .header h2 { font-size: 18px; color: #7f8c8d; margin-top: 5px; font-weight: normal; }
+
+//         /* Student info */
+//         .info { text-align: center; margin-bottom: 30px; }
+//         .info p { font-size: 16px; color: #34495e; margin: 6px 0; }
+//         .info span { font-weight: 600; color: #2980b9; }
+
+//         /* Table styling */
+//         table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+//         thead { background-color: #2980b9; color: #fff; font-weight: 600; }
+//         th, td { padding: 12px 15px; text-align: center; }
+//         tbody tr:nth-child(even) { background-color: #ecf0f1; }
+//         tbody tr:hover { background-color: #d6eaf8; transition: 0.3s; }
+//         tfoot td { font-weight: 600; background-color: #bdc3c7; }
+
+//         /* Footer */
+//         .footer { text-align: center; margin-top: 30px; font-size: 14px; color: #7f8c8d; }
+
+//         /* Responsive */
+//         @media(max-width: 600px){
+//           body { padding: 20px; }
+//           .container { padding: 20px; }
+//           .info p { font-size: 14px; }
+//           table { font-size: 12px; }
+//         }
+//       </style>
+//     </head>
+//     <body>
+//       <div class="container">
+//         <div class="header">
+//           <h1>Student Transcript</h1>
+//           <h2>Generated by CBT System</h2>
+//         </div>
+
+//         <div class="info">
+//           <p><span>Student:</span> ${results.student?.name ?? "N/A"}</p>
+//           <p><span>Class:</span> ${
+//             results.student?.class?.className ?? "N/A"
+//           }</p>
+//           <p><span>Date:</span> ${new Date().toLocaleDateString()}</p>
+//         </div>
+
+//         <table>
+//           <thead>
+//             <tr>
+//             <th>S/N</th>
+//               <th>Course</th>
+//               <th>Test</th>
+//               <th>Score</th>
+//               <th>Status</th>
+//               <th>Started At</th>
+//               <th>Ended At</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             ${results.courses
+//               .map((c) =>
+//                 c.tests
+//                   .map(
+//                     (t, index) => `<tr>
+//                       <td>${index + 1}</td>
+//                       <td>${c.course?.title ?? "N/A"}</td>
+//                       <td>${t.title ?? "N/A"}</td>
+//                       <td>${
+//                         t.session?.score != null
+//                           ? t.session.score
+//                           : "unreleased"
+//                       }</td>
+//                       <td>${t.session?.status ?? "unreleased"}</td>
+//                       <td>${
+//                         t.session?.startedAt
+//                           ? new Date(t.session.startedAt).toLocaleString()
+//                           : ""
+//                       }</td>
+//                       <td>${
+//                         t.session?.endedAt
+//                           ? new Date(t.session.endedAt).toLocaleString()
+//                           : ""
+//                       }</td>
+//                     </tr>`
+//                   )
+//                   .join("")
+//               )
+//               .join("")}
+//           </tbody>
+
+//         </table>
+// <div style="margin-top: 20px; font-weight: 600; text-align: right;">
+//   Average Score: ${averageScore}
+// </div>
+//         <div class="footer">
+//           Generated automatically by CBT System &copy; ${new Date().getFullYear()}
+//         </div>
+//       </div>
+//     </body>
+//   </html>
+//   `;
+
+//   const file = { content: html };
+//   const pdfBuffer = await pdf.generatePdf(file, { format: "A4" });
+//   return pdfBuffer;
+// }
+
 export async function generatePDF(results) {
   // Calculate average safely (ignore unreleased scores)
-  const totalScores = [];
-  results.courses.forEach((c) => {
-    c.tests.forEach((t) => {
-      const score = Number(t.session?.score);
-      if (!isNaN(score)) totalScores.push(score);
-    });
-  });
+  const totalScores = results.results
+    .map((r) => Number(r.session?.score))
+    .filter((s) => !isNaN(s));
 
   const averageScore =
     totalScores.length > 0
@@ -785,7 +1115,7 @@ export async function generatePDF(results) {
         <table>
           <thead>
             <tr>
-            <th>S/N</th>
+              <th>S/N</th>
               <th>Course</th>
               <th>Test</th>
               <th>Score</th>
@@ -794,42 +1124,42 @@ export async function generatePDF(results) {
               <th>Ended At</th>
             </tr>
           </thead>
-          <tbody>
-            ${results.courses
-              .map((c) =>
-                c.tests
-                  .map(
-                    (t, index) => `<tr>
-                      <td>${index + 1}</td>
-                      <td>${c.course?.title ?? "N/A"}</td>
-                      <td>${t.title ?? "N/A"}</td>
-                      <td>${
-                        t.session?.score != null
-                          ? t.session.score
-                          : "unreleased"
-                      }</td>
-                      <td>${t.session?.status ?? "unreleased"}</td>
-                      <td>${
-                        t.session?.startedAt
-                          ? new Date(t.session.startedAt).toLocaleString()
-                          : ""
-                      }</td>
-                      <td>${
-                        t.session?.endedAt
-                          ? new Date(t.session.endedAt).toLocaleString()
-                          : ""
-                      }</td>
-                    </tr>`
-                  )
-                  .join("")
-              )
-              .join("")}
-          </tbody>
-         
+     <tbody>
+  ${results.results
+    .map((r, index) => {
+      let statusColor = "";
+      if (r.session?.status === "PASSED")
+        statusColor = "color: green; font-weight: bold;";
+      else if (r.session?.status === "FAILED")
+        statusColor = "color: red; font-weight: bold;";
+      else if (r.session?.status === "IN_PROGRESS")
+        statusColor = "color: orange; font-weight: bold;";
+      else statusColor = "color: gray;";
+
+      return `<tr>
+        <td>${index + 1}</td>
+        <td>${r.course?.title ?? "N/A"}</td>
+        <td>${r.test?.title ?? "N/A"}</td>
+        <td>${r.session?.score != null ? r.session.score : "unreleased"}</td>
+        <td style="${statusColor}">${r.session?.status ?? "unreleased"}</td>
+        <td>${
+          r.session?.startedAt
+            ? new Date(r.session.startedAt).toLocaleString()
+            : ""
+        }</td>
+        <td>${
+          r.session?.endedAt ? new Date(r.session.endedAt).toLocaleString() : ""
+        }</td>
+      </tr>`;
+    })
+    .join("")}
+</tbody>
         </table>
-<div style="margin-top: 20px; font-weight: 600; text-align: right;">
-  Average Score: ${averageScore}
-</div>
+
+        <div style="margin-top: 20px; font-weight: 600; text-align: right;">
+          Average Score: ${averageScore}
+        </div>
+
         <div class="footer">
           Generated automatically by CBT System &copy; ${new Date().getFullYear()}
         </div>
@@ -842,6 +1172,39 @@ export async function generatePDF(results) {
   const pdfBuffer = await pdf.generatePdf(file, { format: "A4" });
   return pdfBuffer;
 }
+
+// export async function generateExcel(results) {
+//   const workbook = new ExcelJS.Workbook();
+//   const sheet = workbook.addWorksheet("Results");
+
+//   sheet.columns = [
+//     { header: "Course", key: "course", width: 30 },
+//     { header: "Test", key: "test", width: 30 },
+//     { header: "Score", key: "score", width: 15 },
+//     { header: "Status", key: "status", width: 15 },
+//     { header: "Started At", key: "startedAt", width: 20 },
+//     { header: "Ended At", key: "endedAt", width: 20 },
+//   ];
+
+//   results.courses.forEach((c) => {
+//     c.tests.forEach((t) => {
+//       sheet.addRow({
+//         course: c.course.title,
+//         test: t.title,
+//         score: t.session?.score ?? "unreleased",
+//         status: t.session?.status ?? "unreleased",
+//         startedAt: t.session?.startedAt
+//           ? new Date(t.session.startedAt).toLocaleString()
+//           : "",
+//         endedAt: t.session?.endedAt
+//           ? new Date(t.session.endedAt).toLocaleString()
+//           : "",
+//       });
+//     });
+//   });
+
+//   return workbook;
+// }
 
 export async function generateExcel(results) {
   const workbook = new ExcelJS.Workbook();
@@ -856,20 +1219,19 @@ export async function generateExcel(results) {
     { header: "Ended At", key: "endedAt", width: 20 },
   ];
 
-  results.courses.forEach((c) => {
-    c.tests.forEach((t) => {
-      sheet.addRow({
-        course: c.course.title,
-        test: t.title,
-        score: t.session?.score ?? "unreleased",
-        status: t.session?.status ?? "unreleased",
-        startedAt: t.session?.startedAt
-          ? new Date(t.session.startedAt).toLocaleString()
-          : "",
-        endedAt: t.session?.endedAt
-          ? new Date(t.session.endedAt).toLocaleString()
-          : "",
-      });
+  // Loop over flat results array
+  results.results.forEach((r) => {
+    sheet.addRow({
+      course: r.course?.title ?? "N/A",
+      test: r.test?.title ?? "N/A",
+      score: r.session?.score ?? "unreleased",
+      status: r.session?.status ?? "unreleased",
+      startedAt: r.session?.startedAt
+        ? new Date(r.session.startedAt).toLocaleString()
+        : "",
+      endedAt: r.session?.endedAt
+        ? new Date(r.session.endedAt).toLocaleString()
+        : "",
     });
   });
 

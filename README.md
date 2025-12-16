@@ -1828,16 +1828,16 @@ Retrieve aggregated and detailed results for a student across their courses with
 
 **Query Parameters (optional):**
 
-| Parameter   | Type     | Default | Description                                            |
-| :---------- | :------- | :------ | :----------------------------------------------------- |
-| `courseId`  | `Number` |         | Filter by specific course ID                           |
-| `startDate` | `Date`   |         | ISO date string – start of range                       |
-| `endDate`   | `Date`   |         | ISO date string – end of range                         |
-| `testType`  | `String` | `ALL`   | Filter by test type: `TEST`, `EXAM`, `ALL`             |
-| `page`      | `Number` | `1`     | Page number for pagination                             |
-| `limit`     | `Number` | `10`    | Number of results per page (max 100)                   |
-| `sort`      | `String` | `date`  | Field to sort by: `score`, `date`, `student`, `course` |
-| `order`     | `String` | `desc`  | Sort order: `asc` or `desc`                            |
+| Parameter   | Type     | Default | Description                                           |
+| :---------- | :------- | :------ | :---------------------------------------------------- |
+| `courseId`  | `Number` |         | Filter by specific course ID                          |
+| `startDate` | `Date`   |         | ISO date string – start of range                      |
+| `endDate`   | `Date`   |         | ISO date string – end of range                        |
+| `testType`  | `String` | `ALL`   | Filter by test type: `TEST`, `EXAM`, `ALL`            |
+| `page`      | `Number` | `1`     | Page number for pagination                            |
+| `limit`     | `Number` | `10`    | Number of results per page (max 100)                  |
+| `sort`      | `String` | `date`  | Field to sort by: `score`, `date`, `course`, `course` |
+| `order`     | `String` | `desc`  | Sort order: `asc` or `desc`                           |
 
 **Response Example:**
 
