@@ -83,6 +83,7 @@ export const downloadStudentResultsSchema = Joi.object({
   startDate: Joi.date().iso(),
   limit: Joi.number().integer().min(1).default(10000),
   page: Joi.number().integer().min(1).default(1),
+  order: Joi.string().valid("asc", "desc").default("desc"),
   sort: Joi.string(),
   endDate: Joi.date().iso(),
 }).messages({
