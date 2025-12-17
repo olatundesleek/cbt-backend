@@ -17,6 +17,8 @@ export const getStudents = async (user, options = {}) => {
         firstname: true,
         lastname: true,
         username: true,
+        email: true,
+        phoneNumber: true,
         createdAt: true,
         class: {
           include: { courses: true },

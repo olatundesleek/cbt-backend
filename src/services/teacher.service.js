@@ -18,6 +18,9 @@ export const getTeachers = async (user, options = {}) => {
       id: true,
       firstname: true,
       lastname: true,
+      username: true,
+      email: true,
+      phoneNumber: true,
       teacherOf: {
         select: {
           id: true,
