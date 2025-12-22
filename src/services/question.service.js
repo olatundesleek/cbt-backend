@@ -159,21 +159,26 @@ export const updateQuestion = async (questionId, data, user) => {
 };
 
 export const deleteQuestion = async (questionId, user) => {
-  if (!(await canAccessQuestion(questionId, user))) {
-    throw new Error("Cannot delete this question");
-  }
+  try {
+    if (!(await canAccessQuestion(questionId, user))) {
+      throw new Error("Cannot delete this question");
+    }
 
-  const question = await prisma.question.findUnique({
-    where: { id: parseInt(questionId) },
-  });
+    const question = await prisma.question.findUnique({
+      where: { id: parseInt(questionId) },
+    });
 
-  await prisma.question.delete({
-    where: { id: parseInt(questionId) },
-  });
+    await prisma.question.delete({
+      where: { id: parseInt(questionId) },
+    });
 
-  // Invalidate cache after delete
-  if (question) {
-    invalidateQuestionCaches(question.bankId);
+    // Invalidate cache after delete
+    if (question) {
+      invalidateQuestionCaches(question.bankId);
+    }
+  } catch (error) {
+    console.log(error);
+    throw error;
   }
 };
 
