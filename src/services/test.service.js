@@ -551,6 +551,10 @@ export const deleteTest = async (testId, user) => {
 
     // if userRole is TEACHER and status is being changed to 'completed', prevent it
 
+    const data = await prisma.test.findUnique({
+      where: { id: parseInt(testId) },
+    });
+
     if (
       (user.role === "TEACHER" && data.testState === "active") ||
       data.testState === "completed"
@@ -565,6 +569,7 @@ export const deleteTest = async (testId, user) => {
       where: { id: parseInt(testId) },
     });
   } catch (error) {
+    console.log("Delete test error:", error);
     error.message = "Unable to delete test";
     throw error;
   }

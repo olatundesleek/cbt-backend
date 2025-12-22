@@ -47,11 +47,34 @@ export const getStudents = async (user, options = {}) => {
   }
 
   if (user.role === "TEACHER") {
-    // Return students in classes taught by the teacher
+    // Get courses taught by this teacher
+    const teacherCourses = await prisma.course.findMany({
+      where: { teacherId: user.id },
+      select: { id: true },
+    });
+
+    const teacherCourseIds = teacherCourses.map((course) => course.id);
+
+    // Return students who are either:
+    // 1. In a class taught by this teacher, OR
+    // 2. Taking at least one course taught by this teacher
     const students = await prisma.user.findMany({
       where: {
         role: "STUDENT",
-        class: { teacherId: user.id },
+        OR: [
+          {
+            class: { teacherId: user.id }, // In teacher's class
+          },
+          {
+            class: {
+              courses: {
+                some: {
+                  id: { in: teacherCourseIds }, // Taking teacher's course
+                },
+              },
+            },
+          },
+        ],
       },
       select: {
         id: true,
@@ -60,7 +83,13 @@ export const getStudents = async (user, options = {}) => {
         username: true,
         createdAt: true,
         class: {
-          include: { courses: true },
+          include: {
+            courses: {
+              where: {
+                teacherId: user.id,
+              },
+            },
+          },
         },
       },
       skip,
@@ -73,7 +102,20 @@ export const getStudents = async (user, options = {}) => {
     const total = await prisma.user.count({
       where: {
         role: "STUDENT",
-        class: { teacherId: user.id },
+        OR: [
+          {
+            class: { teacherId: user.id },
+          },
+          {
+            class: {
+              courses: {
+                some: {
+                  id: { in: teacherCourseIds },
+                },
+              },
+            },
+          },
+        ],
       },
     });
 

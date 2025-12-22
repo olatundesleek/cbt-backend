@@ -84,6 +84,39 @@ export const updateCourse = async (courseId, title, description, teacherId) => {
   }
 };
 
+// export const deleteCourse = async (courseId) => {
+//   try {
+//     const id = parseInt(courseId);
+
+//     // 1. Check if any test exists in this course
+//     const linkedTests = await prisma.test.findMany({
+//       where: { courseId: id },
+//       select: { id: true, title: true },
+//     });
+
+//     if (linkedTests.length > 0) {
+//       const titles = linkedTests.map((t) => t.title).join(", ");
+//       const error = new Error("unable to delete course");
+//       error.details = `Cannot delete this course. The following tests are still using it: ${titles}. Please assign them to another course first.`;
+//       throw error;
+//     }
+
+//     // 2. Disconnect course from classes
+//     await prisma.class.updateMany({
+//       where: { ClassCourse: { some: { id } } },
+//       data: { ClassCourse: { disconnect: { id } } },
+//     });
+
+//     // 3. Delete the course (question banks will automatically set courseId to null)
+//     await prisma.course.delete({ where: { id } });
+
+//     return { deletedCourseId: id };
+//   } catch (error) {
+//     console.log("Error deleting course:", error);
+//     throw error;
+//   }
+// };
+
 export const deleteCourse = async (courseId) => {
   try {
     const id = parseInt(courseId);
@@ -101,17 +134,25 @@ export const deleteCourse = async (courseId) => {
       throw error;
     }
 
-    // 2. Disconnect course from classes
-    await prisma.class.updateMany({
+    // 2. Disconnect course from all classes
+    const classes = await prisma.class.findMany({
       where: { courses: { some: { id } } },
-      data: { courses: { disconnect: { id } } },
+      select: { id: true },
     });
 
-    // 3. Delete the course (question banks will automatically set courseId to null)
+    for (const cls of classes) {
+      await prisma.class.update({
+        where: { id: cls.id },
+        data: { courses: { disconnect: { id } } },
+      });
+    }
+
+    // 3. Delete the course
     await prisma.course.delete({ where: { id } });
 
     return { deletedCourseId: id };
   } catch (error) {
+    console.log("Error deleting course:", error);
     throw error;
   }
 };
