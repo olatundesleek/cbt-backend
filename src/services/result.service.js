@@ -902,7 +902,9 @@ export async function toggleResultRelease(testId, showResult, user) {
   if (!test) {
     throw new Error("Test not found");
   }
-
+  if (test.type === "PRACTICE") {
+    throw new Error("Cannot toggle results for PRACTICE tests");
+  }
   const updated = await prisma.test.update({
     where: { id: parseInt(testId) },
     data: { showResult },
