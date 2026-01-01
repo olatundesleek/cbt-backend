@@ -14,9 +14,15 @@ A robust backend system for managing computer-based tests, built with Express.js
 - [API Documentation](#api-documentation)
   - [Complete API Routes](#complete-api-routes)
   - [Authentication](#authentication)
-  - [Tests](#tests)
+  - [Dashboard](#dashboard)
+  - [Classes](#classes)
   - [Courses](#courses)
+  - [Teachers](#teachers)
+  - [Tests](#tests)
   - [Question Banks](#question-banks)
+  - [Test Sessions](#test-sessions)
+  - [Results](#results)
+  - [Profile](#profile)
   - [Students](#students)
   - [Notifications](#notification-api)
   - [System Settings](#system-settings-api)
@@ -1012,7 +1018,187 @@ GET /api/question-banks/:bankId/questions
 }
 ```
 
-#### 📘 Questions
+#### � Question Bank Resources
+
+## Upload Images to Question Bank
+
+```http
+POST /api/question-banks/:bankId/images
+```
+
+**Form Data**
+| Field | Type | Description |
+|-------|--------|-------------|
+| bankImages | file[] | Image files to upload (max 10) |
+| description | string | Optional description for all images |
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Images uploaded successfully",
+  "data": [
+    {
+      "id": 1,
+      "url": "http://localhost:4000/uploads/question-banks/image1.jpg",
+      "questionBankId": 1,
+      "description": "Sample image"
+    }
+  ]
+}
+```
+
+## Update Image
+
+```http
+PATCH /api/question-banks/images/:id
+```
+
+**Form Data**
+| Field | Type | Description |
+|-------|--------|-------------|
+| bankImages | file | New image file (optional) |
+| description | string | Updated description (optional) |
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Image updated successfully",
+  "data": {
+    "id": 1,
+    "url": "http://localhost:4000/uploads/question-banks/updated.jpg",
+    "description": "Updated description"
+  }
+}
+```
+
+## Delete Image
+
+```http
+DELETE /api/question-banks/images/:id
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Image deleted successfully"
+}
+```
+
+## Create Comprehension
+
+```http
+POST /api/question-banks/:bankId/comprehensions
+```
+
+**Request Body**
+
+```json
+{
+  "title": "Reading Comprehension Example",
+  "content": "This is a long passage of text that students will read and answer questions about..."
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Comprehension created successfully",
+  "data": {
+    "id": 1,
+    "title": "Reading Comprehension Example",
+    "content": "This is a long passage of text...",
+    "questionBankId": 1
+  }
+}
+```
+
+## Update Comprehension
+
+```http
+PATCH /api/question-banks/comprehensions/:id
+```
+
+**Request Body**
+
+```json
+{
+  "title": "Updated Title",
+  "content": "Updated content..."
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Comprehension updated successfully",
+  "data": {
+    "id": 1,
+    "title": "Updated Title",
+    "content": "Updated content...",
+    "questionBankId": 1
+  }
+}
+```
+
+## Delete Comprehension
+
+```http
+DELETE /api/question-banks/comprehensions/:id
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Comprehension deleted successfully"
+}
+```
+
+## Get Question Bank Resources
+
+```http
+GET /api/question-banks/:bankId/resources
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "Bank resources fetched successfully",
+  "data": {
+    "comprehensions": [
+      {
+        "id": 1,
+        "title": "Reading Comprehension",
+        "content": "Full passage text...",
+        "questionBankId": 1
+      }
+    ],
+    "images": [
+      {
+        "id": 1,
+        "url": "http://localhost:4000/uploads/question-banks/image1.jpg",
+        "description": "Sample image",
+        "questionBankId": 1
+      }
+    ]
+  }
+}
+```
+
+#### �📘 Questions
 
 ## Create Question (Single or Multiple)
 
@@ -1028,7 +1214,9 @@ POST /api/questions
   "options": ["3", "4", "5", "6"],
   "answer": "4",
   "marks": 1,
-  "bankId": 1
+  "bankId": 1,
+  "imageUrl": "https://example.com/math-diagram.jpg",
+  "comprehensionText": "Read the following passage and answer the question..."
 }
 ```
 
@@ -1041,14 +1229,16 @@ POST /api/questions
     "options": ["2", "5", "10"],
     "answer": "5",
     "marks": 1,
-    "bankId": 1
+    "bankId": 1,
+    "imageUrl": "https://example.com/division.jpg"
   },
   {
     "text": "What is 3 × 3?",
     "options": ["6", "9", "12"],
     "answer": "9",
     "marks": 1,
-    "bankId": 1
+    "bankId": 1,
+    "comprehensionText": "Multiplication is repeated addition..."
   }
 ]
 ```
@@ -1065,7 +1255,9 @@ POST /api/questions
     "options": ["3", "4", "5", "6"],
     "answer": "4",
     "marks": 1,
-    "bankId": 1
+    "bankId": 1,
+    "imageUrl": "https://example.com/math-diagram.jpg",
+    "comprehensionText": "Read the following passage and answer the question..."
   }
 }
 ```
@@ -1083,7 +1275,8 @@ POST /api/questions
       "options": ["2", "5", "10"],
       "answer": "5",
       "marks": 1,
-      "bankId": 1
+      "bankId": 1,
+      "imageUrl": "https://example.com/division.jpg"
     },
     {
       "id": 2,
@@ -1091,7 +1284,8 @@ POST /api/questions
       "options": ["6", "9", "12"],
       "answer": "9",
       "marks": 1,
-      "bankId": 1
+      "bankId": 1,
+      "comprehensionText": "Multiplication is repeated addition..."
     }
   ]
 }
@@ -1117,7 +1311,9 @@ GET /api/questions/:questionId
     "options": ["3", "4", "5", "6"],
     "answer": "4",
     "marks": 1,
-    "bankId": 1
+    "bankId": 1,
+    "imageUrl": "https://example.com/math-diagram.jpg",
+    "comprehensionText": "Read the following passage and answer the question..."
   }
 }
 ```
@@ -1137,7 +1333,9 @@ PATCH /api/questions/:questionId
   "text": "Updated question text",
   "options": ["Option A", "Option B"],
   "answer": "Option A",
-  "marks": 2
+  "marks": 2,
+  "imageUrl": "https://example.com/updated-diagram.jpg",
+  "comprehensionText": "Updated comprehension passage..."
 }
 ```
 
@@ -1152,7 +1350,9 @@ PATCH /api/questions/:questionId
     "text": "Updated question text",
     "options": ["Option A", "Option B"],
     "answer": "Option A",
-    "marks": 2
+    "marks": 2,
+    "imageUrl": "https://example.com/updated-diagram.jpg",
+    "comprehensionText": "Updated comprehension passage..."
   }
 }
 ```
