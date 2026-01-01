@@ -35,12 +35,18 @@ export const createQuestion = async (data, user) => {
       if (q.questionImage === "") {
         q.questionImage = null;
       }
+      if (q.imageUrl === "") {
+        q.imageUrl = null;
+      }
     });
 
     // check for comprehensionId fields and set to null if empty string
     questions.forEach((q) => {
       if (q.comprehensionId === "") {
         q.comprehensionId = null;
+      }
+      if (q.comprehensionText === "") {
+        q.comprehensionText = null;
       }
     });
 
@@ -72,8 +78,8 @@ export const createQuestion = async (data, user) => {
             answer: q.answer,
             marks: q.marks || 1,
             bankId: parseInt(q.bankId),
-            questionImage: q.questionImage || null,
-            comprehensionId: q.comprehensionId || null,
+            imageUrl: q.imageUrl || null,
+            comprehensionText: q.comprehensionText || null,
           },
           include: {
             bank: {
@@ -149,10 +155,14 @@ export const updateQuestion = async (questionId, data, user) => {
   const question = await prisma.question.update({
     where: { id: parseInt(questionId) },
     data: {
-      text: data.text,
-      options: data.options,
-      answer: data.answer,
-      marks: data.marks,
+      ...(data.text !== undefined && { text: data.text }),
+      ...(data.options !== undefined && { options: data.options }),
+      ...(data.answer !== undefined && { answer: data.answer }),
+      ...(data.marks !== undefined && { marks: data.marks }),
+      ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+      ...(data.comprehensionText !== undefined && {
+        comprehensionText: data.comprehensionText,
+      }),
     },
     include: {
       bank: {

@@ -85,13 +85,15 @@ export async function getQuestionsInBank(req, res, next) {
 
 export async function uploadBankImages(req, res, next) {
   try {
-    const files = req.files?.images || [];
+    const files = req.files || [];
+
     if (!files.length)
       return res.status(400).json({ message: "No images uploaded" });
 
     const images = await questionBankService.uploadBankImages(
       req.params.bankId,
       files,
+      req.body,
       req.user
     );
 

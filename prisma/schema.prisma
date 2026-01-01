@@ -110,8 +110,8 @@ model QuestionBank {
   questions   Question[]
    images            QuestionBankImage[]
   comprehensions    Comprehension[]
-  createdBy   Int
-  teacher     User        @relation(fields: [createdBy], references: [id])
+  createdBy   Int?
+  teacher     User?        @relation(fields: [createdBy], references: [id],onDelete: SetNull)
   createdAt   DateTime    @default(now())
 }
 
@@ -124,10 +124,8 @@ model Question {
   bankId    Int
   bank      QuestionBank @relation(fields: [bankId], references: [id],onDelete: Cascade)
   answers   Answer[]
-  imageId   Int?          // optional reference to a QuestionBankImage
-  image     QuestionBankImage? @relation(fields: [imageId], references: [id])
-  comprehensionId      Int?          // optional reference to a Comprehension
-  comprehension        Comprehension? @relation(fields: [comprehensionId], references: [id])
+  imageUrl  String?      // direct image URL for the question
+  comprehensionText String?  // direct comprehension content for the question
   createdAt DateTime     @default(now())
 }
 
@@ -135,7 +133,6 @@ model QuestionBankImage {
   id             Int          @id @default(autoincrement())
   questionBankId Int
   questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
-  questions       Question[]
   url            String       // path or URL to the image
   description    String?      // optional caption
   createdAt      DateTime     @default(now())
@@ -146,7 +143,6 @@ model Comprehension {
   id             Int          @id @default(autoincrement())
   questionBankId Int
   questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
-  questions       Question[]
   title          String
   content        String       // full passage
   createdAt      DateTime     @default(now())

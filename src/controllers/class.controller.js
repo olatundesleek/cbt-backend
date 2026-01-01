@@ -36,13 +36,6 @@ export async function getClass(req, res) {
 
 export async function updateClass(req, res, next) {
   try {
-    console.log(
-      "Updating class with ID:",
-      req.params.classId,
-      "with data:",
-      req.body
-    );
-
     const { className, teacherId, courses = [] } = req.body;
 
     const updatedClass = await classService.updateClass(

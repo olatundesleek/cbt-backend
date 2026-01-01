@@ -20,7 +20,11 @@ export const updateComprehensionSchema = Joi.object({
   content: Joi.string().min(10).messages({
     "string.min": "Content must be at least 10 characters",
   }),
-});
+})
+  .or("title", "content")
+  .messages({
+    "object.missing": "You must update at least one field: title or content",
+  });
 
 // Delete comprehension (param validation)
 export const deleteComprehensionSchema = Joi.object({
@@ -33,17 +37,17 @@ export const deleteComprehensionSchema = Joi.object({
 
 // Create / Upload images (description is optional)
 export const createImageSchema = Joi.object({
-  description: Joi.string().max(255).allow("", null).messages({
+  description: Joi.string().max(255).allow("", null).optional().messages({
     "string.max": "Description cannot be longer than 255 characters",
   }),
-});
+}).optional();
 
 // Update an image (optional description, optional file handled by Multer)
 export const updateImageSchema = Joi.object({
-  description: Joi.string().max(255).allow("", null).messages({
+  description: Joi.string().max(255).allow("", null).optional().messages({
     "string.max": "Description cannot be longer than 255 characters",
   }),
-});
+}).optional();
 
 // Delete image (param validation)
 export const deleteImageSchema = Joi.object({

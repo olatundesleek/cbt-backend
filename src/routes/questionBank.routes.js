@@ -10,9 +10,9 @@ import * as questionBankController from "../controllers/questionBank.controller.
 import {
   createQuestionBankSchema,
   updateQuestionBankSchema,
-  getQuestionsSchema,
   getQuestionBanksSchema,
-} from "../validators/question.validator.js";
+} from "../validators/questionBank.validator.js";
+import { getQuestionsSchema } from "../validators/question.validator.js";
 
 import {
   createImageSchema,
@@ -86,8 +86,8 @@ router.post(
   "/:bankId/images",
   authenticate,
   authorizeRoles("TEACHER", "ADMIN"),
+  upload.array("bankImages", 10),
   validateBody(createImageSchema),
-  upload.array("images", 10),
   questionBankController.uploadBankImages
 );
 
@@ -96,7 +96,7 @@ router.patch(
   "/images/:id",
   authenticate,
   authorizeRoles("TEACHER", "ADMIN"),
-  upload.single("image"), // optional file replacement
+  upload.single("bankImages"), // optional file replacement
   validateBody(updateImageSchema),
   validateParams(deleteImageSchema),
   questionBankController.updateBankImage
