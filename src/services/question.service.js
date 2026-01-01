@@ -30,6 +30,26 @@ export const createQuestion = async (data, user) => {
     // Get unique bank IDs from all questions
     const bankIds = [...new Set(questions.map((q) => parseInt(q.bankId)))];
 
+    // check for question image fields and set to null if empty string
+    questions.forEach((q) => {
+      if (q.questionImage === "") {
+        q.questionImage = null;
+      }
+      if (q.imageUrl === "") {
+        q.imageUrl = null;
+      }
+    });
+
+    // check for comprehensionId fields and set to null if empty string
+    questions.forEach((q) => {
+      if (q.comprehensionId === "") {
+        q.comprehensionId = null;
+      }
+      if (q.comprehensionText === "") {
+        q.comprehensionText = null;
+      }
+    });
+
     // Verify all question banks exist and user owns them
     const banks = await prisma.questionBank.findMany({
       where: { id: { in: bankIds } },
@@ -58,6 +78,8 @@ export const createQuestion = async (data, user) => {
             answer: q.answer,
             marks: q.marks || 1,
             bankId: parseInt(q.bankId),
+            imageUrl: q.imageUrl || null,
+            comprehensionText: q.comprehensionText || null,
           },
           include: {
             bank: {
@@ -133,10 +155,14 @@ export const updateQuestion = async (questionId, data, user) => {
   const question = await prisma.question.update({
     where: { id: parseInt(questionId) },
     data: {
-      text: data.text,
-      options: data.options,
-      answer: data.answer,
-      marks: data.marks,
+      ...(data.text !== undefined && { text: data.text }),
+      ...(data.options !== undefined && { options: data.options }),
+      ...(data.answer !== undefined && { answer: data.answer }),
+      ...(data.marks !== undefined && { marks: data.marks }),
+      ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
+      ...(data.comprehensionText !== undefined && {
+        comprehensionText: data.comprehensionText,
+      }),
     },
     include: {
       bank: {
@@ -159,21 +185,26 @@ export const updateQuestion = async (questionId, data, user) => {
 };
 
 export const deleteQuestion = async (questionId, user) => {
-  if (!(await canAccessQuestion(questionId, user))) {
-    throw new Error("Cannot delete this question");
-  }
+  try {
+    if (!(await canAccessQuestion(questionId, user))) {
+      throw new Error("Cannot delete this question");
+    }
 
-  const question = await prisma.question.findUnique({
-    where: { id: parseInt(questionId) },
-  });
+    const question = await prisma.question.findUnique({
+      where: { id: parseInt(questionId) },
+    });
 
-  await prisma.question.delete({
-    where: { id: parseInt(questionId) },
-  });
+    await prisma.question.delete({
+      where: { id: parseInt(questionId) },
+    });
 
-  // Invalidate cache after delete
-  if (question) {
-    invalidateQuestionCaches(question.bankId);
+    // Invalidate cache after delete
+    if (question) {
+      invalidateQuestionCaches(question.bankId);
+    }
+  } catch (error) {
+    console.log(error);
+    throw error;
   }
 };
 

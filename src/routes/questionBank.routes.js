@@ -10,9 +10,20 @@ import * as questionBankController from "../controllers/questionBank.controller.
 import {
   createQuestionBankSchema,
   updateQuestionBankSchema,
-  getQuestionsSchema,
   getQuestionBanksSchema,
-} from "../validators/question.validator.js";
+} from "../validators/questionBank.validator.js";
+import { getQuestionsSchema } from "../validators/question.validator.js";
+
+import {
+  createImageSchema,
+  updateImageSchema,
+  deleteImageSchema,
+  createComprehensionSchema,
+  updateComprehensionSchema,
+  deleteComprehensionSchema,
+  getBankResourcesSchema,
+} from "../validators/questionBankResources.validator.js";
+import { upload } from "../utils/mutler.js";
 
 const router = express.Router();
 
@@ -69,6 +80,96 @@ router.get(
   authenticate,
   authorizeRoles("TEACHER", "ADMIN"),
   questionBankController.getQuestionsInBank
+);
+
+router.post(
+  "/:bankId/images",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  upload.array("bankImages", 10),
+  validateBody(createImageSchema),
+  questionBankController.uploadBankImages
+);
+
+// Update single image (optional new file)
+router.patch(
+  "/images/:id",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  upload.single("bankImages"), // optional file replacement
+  validateBody(updateImageSchema),
+  validateParams(deleteImageSchema),
+  questionBankController.updateBankImage
+);
+
+// Delete single image
+router.delete(
+  "/images/:id",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  validateParams(deleteImageSchema),
+  questionBankController.deleteBankImage
+);
+
+router.post(
+  "/:bankId/comprehensions",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  validateBody(createComprehensionSchema),
+  questionBankController.createComprehension
+);
+
+router.patch(
+  "/comprehensions/:id",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  validateBody(updateComprehensionSchema),
+  validateParams(deleteComprehensionSchema),
+  questionBankController.updateComprehension
+);
+
+router.delete(
+  "/comprehensions/:id",
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  validateParams(deleteComprehensionSchema),
+  questionBankController.deleteComprehension
+);
+
+// // fetch all comprehensions for a question bank
+// router.get(
+//   "/:bankId/comprehensions",
+//   validateParams(getQuestionsSchema),
+//   authenticate,
+//   authorizeRoles("TEACHER", "ADMIN"),
+//   questionBankController.getComprehensionsInBank
+// );
+
+// // get single comprehension by id
+// router.get(
+//   "/comprehensions/:id",
+//   validateParams(deleteComprehensionSchema),
+//   authenticate,
+//   authorizeRoles("TEACHER", "ADMIN"),
+//   questionBankController.getComprehensionById
+// );
+
+// // fetch images for a question bank
+// router.get(
+//   "/:bankId/images",
+//   validateParams(getQuestionsSchema),
+//   authenticate,
+//   authorizeRoles("TEACHER", "ADMIN"),
+//   questionBankController.getImagesInBank
+// );
+
+// single endpoint to get all bank resources (comprehensions + images)
+router.get(
+  "/:bankId/resources",
+  validateParams(getBankResourcesSchema),
+  authenticate,
+  authorizeRoles("TEACHER", "ADMIN"),
+  questionBankController.getBankResources
 );
 
 export default router;
