@@ -21,6 +21,9 @@ const singleQuestionSchema = Joi.object({
       return value;
     }),
 
+  questionImage: Joi.string().uri().optional().allow(null, ""),
+  comprehensionId: Joi.number().integer().positive().optional().allow(null, ""),
+
   marks: Joi.number().integer().min(1).default(1),
   bankId: Joi.number().integer().required(),
 });

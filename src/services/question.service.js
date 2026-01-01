@@ -30,6 +30,20 @@ export const createQuestion = async (data, user) => {
     // Get unique bank IDs from all questions
     const bankIds = [...new Set(questions.map((q) => parseInt(q.bankId)))];
 
+    // check for question image fields and set to null if empty string
+    questions.forEach((q) => {
+      if (q.questionImage === "") {
+        q.questionImage = null;
+      }
+    });
+
+    // check for comprehensionId fields and set to null if empty string
+    questions.forEach((q) => {
+      if (q.comprehensionId === "") {
+        q.comprehensionId = null;
+      }
+    });
+
     // Verify all question banks exist and user owns them
     const banks = await prisma.questionBank.findMany({
       where: { id: { in: bankIds } },
@@ -58,6 +72,8 @@ export const createQuestion = async (data, user) => {
             answer: q.answer,
             marks: q.marks || 1,
             bankId: parseInt(q.bankId),
+            questionImage: q.questionImage || null,
+            comprehensionId: q.comprehensionId || null,
           },
           include: {
             bank: {

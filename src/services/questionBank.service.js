@@ -1,4 +1,7 @@
 import prisma from "../config/prisma.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
+import fs from "fs";
+import path from "path";
 
 const canAccessQuestionBank = async (bankId, user) => {
   const bank = await prisma.questionBank.findUnique({
@@ -228,4 +231,218 @@ export const getQuestionsInBank = async (bankId, user) => {
   });
 
   return questions;
+};
+
+export const uploadBankImages = async (bankId, files, user) => {
+  const BASE_URL =
+    process.env.NODE_ENV === "development"
+      ? `http://localhost:${process.env.PORT || 4000}`
+      : "";
+
+  const bank = await prisma.questionBank.findUnique({
+    where: { id: Number(bankId) },
+  });
+
+  if (!bank) throw new Error("Question bank not found");
+
+  if (user.role !== "ADMIN" && bank.createdBy !== user.id) {
+    throw new Error("Not authorized to upload images to this question bank");
+  }
+
+  const createdImages = [];
+
+  for (const file of files) {
+    let imageUrl;
+
+    if (process.env.NODE_ENV === "development") {
+      const uploadDir = path.join(process.cwd(), "uploads", "question-banks");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      const ext = path.extname(file.originalname);
+      const filename = `qb_${bankId}_${Date.now()}${ext}`;
+      const uploadPath = path.join(uploadDir, filename);
+
+      fs.renameSync(file.path, uploadPath);
+
+      imageUrl = `${BASE_URL}/uploads/question-banks/${filename}`;
+    } else {
+      const uploaded = await uploadToCloudinary(
+        file.path,
+        `question-banks/${bankId}`
+      );
+      imageUrl = uploaded.secure_url;
+    }
+
+    const image = await prisma.questionBankImage.create({
+      data: {
+        url: imageUrl,
+        questionBankId: Number(bankId),
+      },
+    });
+
+    createdImages.push(image);
+  }
+
+  return createdImages;
+};
+
+// Update an image
+
+export const updateBankImage = async (imageId, data, file, user) => {
+  const BASE_URL =
+    process.env.NODE_ENV === "development"
+      ? `http://localhost:${process.env.PORT || 4000}`
+      : "";
+
+  const image = await prisma.questionBankImage.findUnique({
+    where: { id: Number(imageId) },
+    include: { bank: true },
+  });
+
+  if (!image) throw new Error("Image not found");
+
+  if (user.role !== "ADMIN" && image.bank.createdBy !== user.id) {
+    throw new Error("Not authorized to update this image");
+  }
+
+  let imageUrl = undefined;
+
+  // Explicit clear
+  if (data.url === null) {
+    imageUrl = null;
+  }
+
+  // Replace image
+  else if (file) {
+    if (process.env.NODE_ENV === "development") {
+      const uploadDir = path.join(process.cwd(), "uploads", "question-banks");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      const ext = path.extname(file.originalname);
+      const filename = `qb_${image.bankId}_${Date.now()}${ext}`;
+      const uploadPath = path.join(uploadDir, filename);
+
+      fs.renameSync(file.path, uploadPath);
+
+      imageUrl = `${BASE_URL}/uploads/question-banks/${filename}`;
+    } else {
+      const uploaded = await uploadToCloudinary(
+        file.path,
+        `question-banks/${image.bankId}`
+      );
+      imageUrl = uploaded.secure_url;
+    }
+  }
+
+  return prisma.questionBankImage.update({
+    where: { id: Number(imageId) },
+    data: {
+      ...(imageUrl !== undefined && { url: imageUrl }),
+      ...(data.description !== undefined && {
+        description: data.description,
+      }),
+    },
+  });
+};
+
+// Delete an image
+export const deleteBankImage = async (imageId, user) => {
+  const image = await prisma.questionBankImage.findUnique({
+    where: { id: Number(imageId) },
+    include: { bank: true },
+  });
+
+  if (!image) throw new Error("Image not found");
+
+  if (user.role !== "ADMIN" && image.bank.createdBy !== user.id) {
+    throw new Error("Not authorized to delete this image");
+  }
+
+  await prisma.questionBankImage.delete({
+    where: { id: Number(imageId) },
+  });
+};
+
+// Create a comprehension
+
+export const createComprehension = async (bankId, body, user) => {
+  const bank = await prisma.questionBank.findUnique({
+    where: { id: parseInt(bankId) },
+  });
+  if (!bank) throw new Error("Question bank not found");
+  if (user.role !== "ADMIN" && bank.createdBy !== user.id)
+    throw new Error("Not authorized to add comprehension to this bank");
+
+  const comprehension = await prisma.comprehension.create({
+    data: {
+      title: body.title,
+      content: body.content,
+      questionBankId: parseInt(bankId),
+    },
+  });
+
+  return comprehension;
+};
+
+/**
+ * Update a comprehension
+ */
+export const updateComprehension = async (comprehensionId, body, user) => {
+  const comprehension = await prisma.comprehension.findUnique({
+    where: { id: parseInt(comprehensionId) },
+    include: { bank: true },
+  });
+  if (!comprehension) throw new Error("Comprehension not found");
+
+  if (user.role !== "ADMIN" && comprehension.bank.createdBy !== user.id)
+    throw new Error("Not authorized to update this comprehension");
+
+  const updated = await prisma.comprehension.update({
+    where: { id: parseInt(comprehensionId) },
+    data: {
+      title: body.title || comprehension.title,
+      content: body.content || comprehension.content,
+    },
+  });
+
+  return updated;
+};
+
+/**
+ * Delete a comprehension
+ */
+export const deleteComprehension = async (comprehensionId, user) => {
+  const comprehension = await prisma.comprehension.findUnique({
+    where: { id: parseInt(comprehensionId) },
+    include: { bank: true },
+  });
+  if (!comprehension) throw new Error("Comprehension not found");
+
+  if (user.role !== "ADMIN" && comprehension.bank.createdBy !== user.id)
+    throw new Error("Not authorized to delete this comprehension");
+
+  await prisma.comprehension.delete({
+    where: { id: parseInt(comprehensionId) },
+  });
+  return true;
+};
+
+export const getBankResources = async (bankId, user) => {
+  if (!(await canAccessQuestionBank(bankId, user))) {
+    throw new Error("Cannot access resources of this question bank");
+  }
+  const comprehensions = await prisma.comprehension.findMany({
+    where: { questionBankId: parseInt(bankId) },
+    orderBy: { createdAt: "desc" },
+  });
+  const images = await prisma.questionBankImage.findMany({
+    where: { questionBankId: parseInt(bankId) },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return { comprehensions, images };
 };
