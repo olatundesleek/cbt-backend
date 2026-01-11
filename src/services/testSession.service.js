@@ -135,6 +135,8 @@ export async function startSession({ studentId, testId }) {
           : JSON.parse(q.options || "[]"),
         selectedOption: answerMap.get(q.id) || null,
         displayNumber: i + 1,
+        imageUrl: q.imageUrl,
+        comprehensionText: q.comprehensionText,
       }));
 
       return {
@@ -200,6 +202,8 @@ export async function startSession({ studentId, testId }) {
         : JSON.parse(q.options || "[]"),
       selectedOption: null,
       displayNumber: i + 1,
+      imageUrl: q.imageUrl,
+      comprehensionText: q.comprehensionText,
     }));
 
     return {
@@ -271,6 +275,8 @@ export async function fetchQuestionsByNumber({
         : JSON.parse(q.options || "[]"),
       selectedOption: answerMap.get(q.id) || null,
       displayNumber: startIndex + i + 1,
+      imageUrl: q.imageUrl,
+      comprehensionText: q.comprehensionText,
     }));
 
     const answeredCount = await prisma.answer.count({
@@ -410,6 +416,8 @@ export async function submitAnswerAndGetNext({
       : JSON.parse(q.options || "[]"),
     selectedOption: answerMap.get(q.id) || null,
     displayNumber: lastIndex + i + 2,
+    imageUrl: q.imageUrl,
+    comprehensionText: q.comprehensionText,
   }));
 
   const answeredCount = await prisma.answer.count({
@@ -500,6 +508,8 @@ export async function submitAnswerAndGetPrevious({
         : JSON.parse(q.options || "[]"),
       selectedOption: answerMap.get(q.id) || null,
       displayNumber: start + i + 1,
+      imageUrl: q.imageUrl,
+      comprehensionText: q.comprehensionText,
     }));
 
     const answeredCount = await prisma.answer.count({
@@ -557,6 +567,8 @@ export async function finishSession({ sessionId, studentId }) {
           options: Array.isArray(a.question.options)
             ? a.question.options
             : JSON.parse(a.question.options || "[]"),
+          imageUrl: a.question.imageUrl,
+          comprehensionText: a.question.comprehensionText,
         },
       }));
       return { ...updated, score, answers: formattedAnswers };
