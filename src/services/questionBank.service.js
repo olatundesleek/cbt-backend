@@ -360,6 +360,21 @@ export const deleteBankImage = async (imageId, user) => {
   await prisma.questionBankImage.delete({
     where: { id: Number(imageId) },
   });
+
+  // delete the image from the folder if stored locally
+  if (process.env.NODE_ENV === "development") {
+    const imagePath = path.join(
+      process.cwd(),
+      "uploads",
+      "question-banks",
+      path.basename(image.url)
+    );
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
+  } else {
+    //   delete from any server that it is stored on
+  }
 };
 
 // Create a comprehension
