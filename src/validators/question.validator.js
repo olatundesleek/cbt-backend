@@ -1,9 +1,10 @@
 import Joi from "joi";
 
 const isSafeFloat = (value) => {
-  if (value < 1 || value > 3.4e38) return false; // enforce min/max
+  if (value <= 0 || value > 3.4e38) return false;
   return Number.isInteger(value * 64); // multiples of 1/64
 };
+
 //  Single Question Schema
 const singleQuestionSchema = Joi.object({
   text: Joi.string().min(10).max(500).required(),
@@ -31,9 +32,10 @@ const singleQuestionSchema = Joi.object({
   marks: Joi.number()
     .custom((value, helpers) => {
       if (!isSafeFloat(value)) {
-        return helpers.error("any.invalid", {
-          message: "Marks must be a safe float (like 1, 1.25, 1.5, etc.)",
-        });
+        // This ensures the message is returned directly
+        return helpers.message(
+          "Marks must be a safe float (like 0.5,0.25, 1, 1.25, 1.5, etc.)",
+        );
       }
       return value;
     })
@@ -64,9 +66,10 @@ export const updateQuestionSchema = Joi.object({
   marks: Joi.number()
     .custom((value, helpers) => {
       if (!isSafeFloat(value)) {
-        return helpers.error("any.invalid", {
-          message: "Marks must be a safe float (like 1, 1.25, 1.5, etc.)",
-        });
+        // This ensures the message is returned directly
+        return helpers.message(
+          "Marks must be a safe float (like 0.5,0.25, 1, 1.25, 1.5, etc.)",
+        );
       }
       return value;
     })

@@ -569,6 +569,7 @@ export async function finishSession({ sessionId, studentId }) {
             : JSON.parse(a.question.options || "[]"),
           imageUrl: a.question.imageUrl,
           comprehensionText: a.question.comprehensionText,
+          marks: a.question.marks,
         },
         correctAnswer: a.question.answer,
       }));
