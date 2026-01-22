@@ -1,5 +1,9 @@
 import Joi from "joi";
 
+const isSafeFloat = (value) => {
+  if (value < 1 || value > 3.4e38) return false; // enforce min/max
+  return Number.isInteger(value * 64); // multiples of 1/64
+};
 //  Single Question Schema
 const singleQuestionSchema = Joi.object({
   text: Joi.string().min(10).max(500).required(),
@@ -24,14 +28,23 @@ const singleQuestionSchema = Joi.object({
   imageUrl: Joi.string().uri().optional().allow(null, ""),
   comprehensionText: Joi.string().min(10).optional().allow(null, ""),
 
-  marks: Joi.number().integer().min(1).default(1),
+  marks: Joi.number()
+    .custom((value, helpers) => {
+      if (!isSafeFloat(value)) {
+        return helpers.error("any.invalid", {
+          message: "Marks must be a safe float (like 1, 1.25, 1.5, etc.)",
+        });
+      }
+      return value;
+    })
+    .default(1),
   bankId: Joi.number().integer().required(),
 });
 
 //  Allow single or multiple questions
 export const createQuestionSchema = Joi.alternatives().try(
   singleQuestionSchema,
-  Joi.array().items(singleQuestionSchema).min(1).max(100)
+  Joi.array().items(singleQuestionSchema).min(1).max(100),
 );
 
 //  Update Question Schema
@@ -48,7 +61,16 @@ export const updateQuestionSchema = Joi.object({
   imageUrl: Joi.string().uri().optional().allow(null, ""),
   comprehensionText: Joi.string().min(10).optional().allow(null, ""),
 
-  marks: Joi.number().integer().min(1).optional(),
+  marks: Joi.number()
+    .custom((value, helpers) => {
+      if (!isSafeFloat(value)) {
+        return helpers.error("any.invalid", {
+          message: "Marks must be a safe float (like 1, 1.25, 1.5, etc.)",
+        });
+      }
+      return value;
+    })
+    .default(1),
 }).min(1); // At least one field must be provided
 
 //  Get Questions Schema
