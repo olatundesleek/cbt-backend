@@ -1,9 +1,9 @@
 import Joi from "joi";
 
 export const updateProfileSchema = Joi.object({
-  firstname: Joi.string().min(2).max(100).optional(),
-  lastname: Joi.string().min(2).max(100).optional(),
-  username: Joi.string().optional(),
+  // firstname: Joi.string().min(2).max(100).optional(),
+  // lastname: Joi.string().min(2).max(100).optional(),
+  // username: Joi.string().optional(),
   email: Joi.string().email().optional(),
   phoneNumber: Joi.string().optional(),
 }).min(1); // At least one field must be provided

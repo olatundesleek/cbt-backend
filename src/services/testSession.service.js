@@ -24,7 +24,7 @@ export async function endSessionByTimer(sessionId, reason = "duration") {
 
     const score = session.answers.reduce(
       (total, answer) => total + (answer.isCorrect ? 1 : 0),
-      0
+      0,
     );
 
     await prisma.testSession.update({
@@ -69,7 +69,7 @@ export async function startSession({ studentId, testId }) {
           where: { bankId: test.bankId },
           orderBy: { id: "asc" },
         }),
-      30 * 60 * 1000
+      30 * 60 * 1000,
     );
 
     const now = new Date();
@@ -125,7 +125,7 @@ export async function startSession({ studentId, testId }) {
         select: { questionId: true, selectedOption: true },
       });
       const answerMap = new Map(
-        existingAnswers.map((a) => [a.questionId, a.selectedOption])
+        existingAnswers.map((a) => [a.questionId, a.selectedOption]),
       );
       const questions = shuffledQuestions.slice(0, 2).map((q, i) => ({
         id: q.id,
@@ -172,14 +172,14 @@ export async function startSession({ studentId, testId }) {
           () =>
             endSessionByTimer(
               session.id,
-              timeoutMs === endTimeMs ? "endTime" : "duration"
+              timeoutMs === endTimeMs ? "endTime" : "duration",
             ),
-          timeoutMs
+          timeoutMs,
         );
         const interval = setInterval(() => {
           const remaining = Math.max(
             0,
-            timeoutMs - (Date.now() - now.getTime())
+            timeoutMs - (Date.now() - now.getTime()),
           );
           io.to(`session_${session.id}`).emit("time_left", {
             sessionId: session.id,
@@ -243,7 +243,7 @@ export async function fetchQuestionsByNumber({
           where: { bankId: session.test.bankId },
           orderBy: { id: "asc" },
         }),
-      30 * 60 * 1000
+      30 * 60 * 1000,
     );
 
     if (!allQuestions.length)
@@ -264,7 +264,7 @@ export async function fetchQuestionsByNumber({
       select: { questionId: true, selectedOption: true },
     });
     const answerMap = new Map(
-      existingAnswers.map((a) => [a.questionId, a.selectedOption])
+      existingAnswers.map((a) => [a.questionId, a.selectedOption]),
     );
 
     const nextQuestions = slice.map((q, i) => ({
@@ -378,7 +378,7 @@ export async function submitAnswerAndGetNext({
         where: { bankId: session.test.bankId },
         orderBy: { id: "asc" },
       }),
-    30 * 60 * 1000
+    30 * 60 * 1000,
   );
 
   // Save submitted answers
@@ -405,7 +405,7 @@ export async function submitAnswerAndGetNext({
     select: { questionId: true, selectedOption: true },
   });
   const answerMap = new Map(
-    existingAnswers.map((a) => [a.questionId, a.selectedOption])
+    existingAnswers.map((a) => [a.questionId, a.selectedOption]),
   );
 
   const nextQuestions = nextSlice.map((q, i) => ({
@@ -469,7 +469,7 @@ export async function submitAnswerAndGetPrevious({
           where: { bankId: session.test.bankId },
           orderBy: { id: "asc" },
         }),
-      30 * 60 * 1000
+      30 * 60 * 1000,
     );
 
     // Save submitted answers
@@ -484,7 +484,7 @@ export async function submitAnswerAndGetPrevious({
 
     const shuffled = seededShuffle(allQuestions, session.id);
     const firstIndex = shuffled.findIndex(
-      (q) => q.id === answers[0].questionId
+      (q) => q.id === answers[0].questionId,
     );
     const start = Math.max(firstIndex - pageSize, 0);
     const prevSlice = shuffled.slice(start, firstIndex);
@@ -497,7 +497,7 @@ export async function submitAnswerAndGetPrevious({
       select: { questionId: true, selectedOption: true },
     });
     const answerMap = new Map(
-      existingAnswers.map((a) => [a.questionId, a.selectedOption])
+      existingAnswers.map((a) => [a.questionId, a.selectedOption]),
     );
 
     const previousQuestions = prevSlice.map((q, i) => ({
@@ -541,7 +541,7 @@ export async function finishSession({ sessionId, studentId }) {
       throw new Error("Session not found");
 
     const computeScore = (answers) =>
-      answers.reduce((sum, a) => sum + (a.isCorrect ? 1 : 0), 0);
+      answers.reduce((sum, a) => sum + (a.isCorrect ? a.question.marks : 0), 0);
     const score = computeScore(session.answers);
 
     const updated = await prisma.testSession.update({
@@ -570,6 +570,7 @@ export async function finishSession({ sessionId, studentId }) {
           imageUrl: a.question.imageUrl,
           comprehensionText: a.question.comprehensionText,
         },
+        correctAnswer: a.question.answer,
       }));
       return { ...updated, score, answers: formattedAnswers };
     }

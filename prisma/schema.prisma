@@ -120,7 +120,7 @@ model Question {
   text      String
   options   Json
   answer    String
-  marks     Int          @default(1)
+  marks              Float        @default(1)
   bankId    Int
   bank      QuestionBank @relation(fields: [bankId], references: [id],onDelete: Cascade)
   answers   Answer[]
