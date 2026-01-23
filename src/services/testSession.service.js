@@ -312,9 +312,19 @@ export async function submitAnswerOnly({
     });
     if (!question) throw new Error("Question not found");
 
-    const isCorrect =
-      question.answer.trim().toLowerCase() ===
-      selectedOption.trim().toLowerCase();
+    // const isCorrect =
+    //   question.answer.trim().toLowerCase() ===
+    //   selectedOption.trim().toLowerCase();
+
+    // normalize spacing only
+    const normalize = (s) => s.trim().replace(/\s+/g, " ");
+
+    const a = normalize(question.answer);
+    const b = normalize(selectedOption);
+
+    // Strict: must match exactly, including case
+    const isCorrect = a === b;
+
     const existing = await prisma.answer.findFirst({
       where: { testSessionId: sessionId, questionId },
     });
