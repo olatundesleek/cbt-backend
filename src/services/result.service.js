@@ -19,7 +19,7 @@ function canViewResults(session, user, test) {
       return false;
     }
 
-    // Admin and teacher can always view
+    // Admin and Teacher can always view
     if (user.role === "ADMIN" || user.role === "TEACHER") {
       return true;
     }
@@ -110,8 +110,8 @@ export async function getSessionResult(sessionId, user) {
   let score = session.score;
   let status;
 
-  if (user.role === "ADMIN") {
-    // Admin can view everything
+  if (user.role === "ADMIN" || user.role === "TEACHER") {
+    // Admin and teacher can view everything
     if (session.status === "IN_PROGRESS") {
       status = "IN_PROGRESS";
       score = "IN_PROGRESS";
@@ -127,7 +127,7 @@ export async function getSessionResult(sessionId, user) {
       status = session.status;
     }
   } else {
-    // Students and teachers: show unreleased if showResult = false
+    // Students: show unreleased if showResult = false
     if (session.status === "IN_PROGRESS") {
       status = "IN_PROGRESS";
       score = "IN_PROGRESS";
@@ -345,7 +345,7 @@ export async function getAllResults(user, filters = {}) {
   const mappedSessions = sessions.map((session) => {
     const type = session.test.type.toUpperCase();
     const inProgress = session.status === "IN_PROGRESS";
-    const showResult = session.test.showResult;
+    // const showResult = session.test.showResult;
 
     let score = session.score;
     let status;
@@ -353,10 +353,12 @@ export async function getAllResults(user, filters = {}) {
     if (inProgress) {
       status = "IN_PROGRESS";
       score = "IN_PROGRESS";
-    } else if (!showResult) {
-      status = "unreleased";
-      score = "unreleased";
-    } else if (session.status === "COMPLETED") {
+    }
+    // else if (!showResult) {
+    //   status = "unreleased";
+    //   score = "unreleased";
+    // }
+    else if (session.status === "COMPLETED") {
       const numericScore = Number(score);
       const numericPassMark = Number(session.test.passMark);
       if (isNaN(numericScore)) {
