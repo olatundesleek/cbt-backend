@@ -19,8 +19,8 @@ function canViewResults(session, user, test) {
       return false;
     }
 
-    // Admin can always view
-    if (user.role === "ADMIN") {
+    // Admin and Teacher can always view
+    if (user.role === "ADMIN" || user.role === "TEACHER") {
       return true;
     }
 
@@ -110,8 +110,8 @@ export async function getSessionResult(sessionId, user) {
   let score = session.score;
   let status;
 
-  if (user.role === "ADMIN") {
-    // Admin can view everything
+  if (user.role === "ADMIN" || user.role === "TEACHER") {
+    // Admin and teacher can view everything
     if (session.status === "IN_PROGRESS") {
       status = "IN_PROGRESS";
       score = "IN_PROGRESS";
@@ -121,13 +121,13 @@ export async function getSessionResult(sessionId, user) {
       status = isNaN(numericScore)
         ? "ungraded"
         : numericScore >= numericPassMark
-        ? "PASSED"
-        : "FAILED";
+          ? "PASSED"
+          : "FAILED";
     } else {
       status = session.status;
     }
   } else {
-    // Students and teachers: show unreleased if showResult = false
+    // Students: show unreleased if showResult = false
     if (session.status === "IN_PROGRESS") {
       status = "IN_PROGRESS";
       score = "IN_PROGRESS";
@@ -140,8 +140,8 @@ export async function getSessionResult(sessionId, user) {
       status = isNaN(numericScore)
         ? "ungraded"
         : numericScore >= numericPassMark
-        ? "PASSED"
-        : "FAILED";
+          ? "PASSED"
+          : "FAILED";
     } else {
       status = session.status;
     }
@@ -345,7 +345,7 @@ export async function getAllResults(user, filters = {}) {
   const mappedSessions = sessions.map((session) => {
     const type = session.test.type.toUpperCase();
     const inProgress = session.status === "IN_PROGRESS";
-    const showResult = session.test.showResult;
+    // const showResult = session.test.showResult;
 
     let score = session.score;
     let status;
@@ -353,10 +353,12 @@ export async function getAllResults(user, filters = {}) {
     if (inProgress) {
       status = "IN_PROGRESS";
       score = "IN_PROGRESS";
-    } else if (!showResult) {
-      status = "unreleased";
-      score = "unreleased";
-    } else if (session.status === "COMPLETED") {
+    }
+    // else if (!showResult) {
+    //   status = "unreleased";
+    //   score = "unreleased";
+    // }
+    else if (session.status === "COMPLETED") {
       const numericScore = Number(score);
       const numericPassMark = Number(session.test.passMark);
       if (isNaN(numericScore)) {
@@ -400,7 +402,7 @@ export async function getAllResults(user, filters = {}) {
   const courses = Object.values(resultsByCourse).map((c) => {
     const numericScores = c.tests
       .map((t) =>
-        typeof t.session.score === "number" ? t.session.score : null
+        typeof t.session.score === "number" ? t.session.score : null,
       )
       .filter((s) => s !== null);
 
@@ -829,8 +831,8 @@ export async function getStudentCourseResults(user, options = {}) {
         status = isNaN(numericScore)
           ? "ungraded"
           : numericScore >= passMark
-          ? "PASSED"
-          : "FAILED";
+            ? "PASSED"
+            : "FAILED";
       }
 
       return {
@@ -856,7 +858,7 @@ export async function getStudentCourseResults(user, options = {}) {
 
   // === Compute overall stats ===
   const completedSessions = sessions.filter(
-    (s) => !isHiddenSession(s) && s.status === "COMPLETED"
+    (s) => !isHiddenSession(s) && s.status === "COMPLETED",
   );
 
   const overallStats = {
@@ -866,7 +868,7 @@ export async function getStudentCourseResults(user, options = {}) {
       ? (
           completedSessions.reduce(
             (sum, s) => sum + (Number(s.score) || 0),
-            0
+            0,
           ) / completedSessions.length
         ).toFixed(2)
       : "0.00",
@@ -1294,8 +1296,8 @@ export async function generateAllResultsPdf(user, filters) {
                   .map(
                     (t) => `<tr>
                       <td>${t.student?.firstname ?? ""} ${
-                      t.student?.lastname ?? ""
-                    }</td>
+                        t.student?.lastname ?? ""
+                      }</td>
                       <td>${c.course.title}</td>
                       <td>${t.title}</td>
                       <td>${t.session.score ?? "unreleased"}</td>
@@ -1310,9 +1312,9 @@ export async function generateAllResultsPdf(user, filters) {
                           ? new Date(t.session.endedAt).toLocaleString()
                           : ""
                       }</td>
-                    </tr>`
+                    </tr>`,
                   )
-                  .join("")
+                  .join(""),
               )
               .join("")}
           </tbody>
