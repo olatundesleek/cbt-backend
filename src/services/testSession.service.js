@@ -565,7 +565,21 @@ export async function finishSession({ sessionId, studentId }) {
       sessionTimers.delete(sessionId);
     }
 
+
+
     if (session.test.type === "PRACTICE") {
+       // calculate total obtainable marks
+    const bankQuestions = await prisma.question.findMany({
+      where: { bankId: session.test.bankId },
+    });
+   
+    const totalMarks = bankQuestions.reduce(
+  (sum, q) => sum + (q.marks || 0),
+  0
+);
+
+    
+
       const formattedAnswers = session.answers.map((a) => ({
         id: a.id,
         questionId: a.questionId,
@@ -583,7 +597,7 @@ export async function finishSession({ sessionId, studentId }) {
         },
         correctAnswer: a.question.answer,
       }));
-      return { ...updated, score, answers: formattedAnswers };
+      return { ...updated, score,totalMarks, answers: formattedAnswers };
     }
 
     return {

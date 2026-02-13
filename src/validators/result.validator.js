@@ -20,10 +20,10 @@ export const getTestResultsSchema = Joi.object({
     "number.base": "Page must be a number",
     "number.min": "Page must be at least 1",
   }),
-  limit: Joi.number().integer().min(1).max(100).default(10).messages({
+  limit: Joi.number().integer().min(1).max(1000).default(10).messages({
     "number.base": "Limit must be a number",
     "number.min": "Limit must be at least 1",
-    "number.max": "Limit cannot exceed 100",
+    "number.max": "Limit cannot exceed 1000",
   }),
   sort: Joi.string()
     .valid("score", "date", "student")
@@ -46,7 +46,7 @@ export const getAllResultsSchema = Joi.object({
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso(),
   page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(1).max(1000).default(10),
   sort: Joi.string()
     .valid("score", "date", "student", "course")
     .default("date"),
@@ -61,7 +61,7 @@ export const getStudentCourseResultsSchema = Joi.object({
   courseId: Joi.number().integer().positive(), // Optional - filter by specific course
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso(),
-  limit: Joi.number().integer().min(1).max(100).default(10),
+  limit: Joi.number().integer().min(1).max(1000).default(10),
   page: Joi.number().integer().min(1).default(1),
   sort: Joi.string()
     .valid("score", "date", "student", "course")
