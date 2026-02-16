@@ -1,6 +1,7 @@
 import prisma from "../config/prisma.js";
 import ExcelJS from "exceljs";
 import pdf from "html-pdf-node";
+import { seededShuffle } from "../utils/seededShuffle.js";
 // Helper function to check if user can view results
 function canViewResults(session, user, test) {
   const type = test.type.toUpperCase();
@@ -72,7 +73,8 @@ async function calculateCourseStats(courseId, studentId) {
 }
 
 export async function getSessionResult(sessionId, user) {
-  const session = await prisma.testSession.findUnique({
+  try {
+      const session = await prisma.testSession.findUnique({
     where: { id: parseInt(sessionId) },
     include: {
       test: {
@@ -84,15 +86,16 @@ export async function getSessionResult(sessionId, user) {
       student: {
         select: { id: true, firstname: true, lastname: true, class: true },
       },
+      answers: { include: { question: true } },
     },
   });
 
   if (!session) throw new Error("Session not found");
 
   // Exclude Practice results
-  if (session.test.type.toUpperCase() === "PRACTICE") {
-    throw new Error("Practice results are not viewable");
-  }
+  // if (session.test.type.toUpperCase() === "PRACTICE") {
+  //   throw new Error("Practice results are not viewable");
+  // }
 
   // Authorization checks
   if (user.role === "STUDENT" && session.studentId !== user.id) {
@@ -147,6 +150,41 @@ export async function getSessionResult(sessionId, user) {
     }
   }
 
+      // include all the questions for the test, whether answered or not
+     
+      const questions = await prisma.question.findMany({
+        where: { bankId: session.test.bankId },
+      });
+
+      const answersByQuestionId = new Map(
+        session.answers.map((a) => [a.questionId, a]),
+      );
+
+      // preserve the same deterministic shuffle used when creating the session
+      const shuffledQuestions = seededShuffle(questions, session.id);
+
+      const formattedAnswers = shuffledQuestions.map((q, idx) => {
+        const a = answersByQuestionId.get(q.id);
+        return {
+          id: a ? a.id : null,
+          questionId: q.id,
+          selectedOption: a ? a.selectedOption : null,
+          isCorrect: a ? a.isCorrect : false,
+          displayNumber: idx + 1,
+          question: {
+            id: q.id,
+            text: q.text,
+            options: Array.isArray(q.options)
+              ? q.options
+              : JSON.parse(q.options || "[]"),
+            imageUrl: q.imageUrl,
+            comprehensionText: q.comprehensionText,
+            marks: q.marks,
+          },
+          correctAnswer: q.answer,
+        };
+      });
+
   return {
     session: {
       id: session.id,
@@ -170,7 +208,12 @@ export async function getSessionResult(sessionId, user) {
       passMark: session.test.passMark,
     },
     course: session.test.course,
+    questionsAnswers: formattedAnswers,
   };
+  } catch (error) {
+    throw error;
+  }
+
 }
 
 export async function getTestResults(testId, user, options = {}) {
@@ -260,9 +303,12 @@ export async function getAllResults(user, filters = {}) {
     search,
   } = filters;
 
+  // const where = {
+  //   test: { type: { not: "PRACTICE" } },
+  // };
   const where = {
-    test: { type: { not: "PRACTICE" } },
-  };
+  test: {},
+};
 
   if (testId) where.testId = parseInt(testId);
   if (studentId) where.studentId = parseInt(studentId);
