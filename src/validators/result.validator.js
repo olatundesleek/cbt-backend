@@ -42,7 +42,7 @@ export const getAllResultsSchema = Joi.object({
   courseId: Joi.number().integer().positive(),
   classId: Joi.number().integer().positive(),
   studentId: Joi.number().integer().positive(),
-  testType: Joi.string().valid("Exam", "Test", "Quiz", "Assignment"),
+  testType: Joi.string().valid("Exam", "Test", "Practice"),
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso(),
   page: Joi.number().integer().min(1).default(1),
