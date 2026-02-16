@@ -22,7 +22,7 @@ const router = express.Router();
 
 // Get single session result, this is for admin use only
 router.get(
-  "/test/:sessionId",
+  "/session/:sessionId",
   authenticate,
   authorizeRoles("ADMIN", "TEACHER"),
   validateParams(getSessionResultSchema),
