@@ -59,6 +59,67 @@ export const createQuestionBank = async (data) => {
   }
 };
 
+// export const getQuestionBanks = async (user, options = {}) => {
+//   try {
+//     const page = options.page || 1;
+//     const limit = options.limit || 10;
+//     const sort = options.sort || "createdAt";
+//     const order = options.order || "desc";
+
+//     const skip = (page - 1) * limit;
+
+//     const where = {};
+
+//     // If not admin, only show own banks
+//     if (user.role === "TEACHER") {
+//       where.createdBy = user.id;
+//     }
+
+//     const banks = await prisma.questionBank.findMany({
+//       where,
+//       include: {
+//         course: {
+//           select: {
+//             title: true,
+//           },
+//         },
+//         teacher: {
+//           select: {
+//             firstname: true,
+//             lastname: true,
+//           },
+//         },
+//         questions: true,
+//         _count: {
+//           select: {
+//             questions: true,
+//           },
+//         },
+         
+//       },
+//       skip,
+//       take: limit,
+//       orderBy: {
+//         [sort]: order,
+//       },
+//     });
+
+//     const total = await prisma.questionBank.count({ where });
+    
+//     return {
+//       data: banks,
+//       pagination: {
+//         page,
+//         limit,
+//         total,
+//         pages: Math.ceil(total / limit),
+//       },
+//     };
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
 export const getQuestionBanks = async (user, options = {}) => {
   try {
     const page = options.page || 1;
@@ -79,21 +140,13 @@ export const getQuestionBanks = async (user, options = {}) => {
       where,
       include: {
         course: {
-          select: {
-            title: true,
-          },
+          select: { title: true },
         },
         teacher: {
-          select: {
-            firstname: true,
-            lastname: true,
-          },
+          select: { firstname: true, lastname: true },
         },
-        questions: true,
         _count: {
-          select: {
-            questions: true,
-          },
+          select: { questions: true },
         },
       },
       skip,
@@ -103,10 +156,33 @@ export const getQuestionBanks = async (user, options = {}) => {
       },
     });
 
+  
+    const marksGrouped = await prisma.question.groupBy({
+      by: ["bankId"],
+      _sum: {
+        marks: true,
+      },
+      where: {
+        bankId: {
+          in: banks.map((b) => b.id),
+        },
+      },
+    });
+
+   
+    const banksWithTotals = banks.map((bank) => {
+      const match = marksGrouped.find((m) => m.bankId === bank.id);
+
+      return {
+        ...bank,
+        totalObtainableMarks: match?._sum.marks || 0,
+      };
+    });
+
     const total = await prisma.questionBank.count({ where });
 
     return {
-      data: banks,
+      data: banksWithTotals, 
       pagination: {
         page,
         limit,
@@ -118,6 +194,7 @@ export const getQuestionBanks = async (user, options = {}) => {
     throw error;
   }
 };
+
 
 export const getQuestionBankById = async (bankId, user) => {
   if (!(await canAccessQuestionBank(bankId, user))) {

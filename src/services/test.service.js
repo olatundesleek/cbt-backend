@@ -76,6 +76,19 @@ export const createTest = async (data, user) => {
     throw error;
   }
 
+  // prevent user from setting passmanrk greater than total of question marks in the bank
+  const totalObatainableMarks = bank.questions.reduce(
+    (total, question) => total + question.marks,
+    0
+  );
+
+  if (data.passMark > totalObatainableMarks) {
+    const error = new Error("unable to create test");
+    error.details = `Pass mark cannot be greater than total obtainable marks (${totalObatainableMarks})`;
+    throw error;
+  }
+  
+
   if (bank.createdBy !== user.id && user.role !== "ADMIN") {
     const error = new Error("unable to create test");
     error.details = "You don't have permission to use this question bank";
@@ -223,6 +236,10 @@ export const getTestById = async (testId, user) => {
 };
 
 export const updateTest = async (testId, data, user) => {
+
+  try {
+   
+  
   if (!(await canAccessTest(testId, user))) {
     const error = new Error("unable to update Test");
     error.details = "You don't have permission to update this test";
@@ -282,12 +299,33 @@ export const updateTest = async (testId, data, user) => {
       throw error;
     }
 
+
     if (bank.createdBy !== user.id && user.role !== "ADMIN") {
       const error = new Error("Unable to update test");
       error.details = "You don't have permission to use this question bank";
       throw error;
     }
+
+    
+     // prevent user from setting passmanrk greater than total of question marks in the bank
+  const totalObatainableMarks = bank.questions.reduce(
+    (total, question) => total + question.marks,
+    0
+  );
+
+  console.log("passmark" ,data.passMark);
+  console.log("totalObatainableMarks" ,totalObatainableMarks);
+  
+
+  if (data.passMark > totalObatainableMarks) {
+    const error = new Error("unable to update test");
+    error.details = `Pass mark cannot be greater than total obtainable marks (${totalObatainableMarks})`;
+    throw error;
   }
+
+  }
+
+
 
   // Now update
   const test = await prisma.test.update({
@@ -300,6 +338,12 @@ export const updateTest = async (testId, data, user) => {
   });
 
   return test;
+    
+  } catch (error) {
+    throw error;
+  }
+
+ 
 };
 
 export const getTests = async (user, options = {}) => {

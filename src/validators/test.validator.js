@@ -76,6 +76,8 @@ export const updateTestSchema = Joi.object({
   }),
   bankId: Joi.number().messages({
     "number.base": "Question bank ID must be a number",
+  }).required().messages({
+    "any.required": "Question bank ID is required",
   }),
   attemptsAllowed: Joi.number().integer().min(1).default(1).messages({
     "number.min": "At least 1 attempt is required",
