@@ -145,7 +145,7 @@ export const getQuestionBanks = async (user, options = {}) => {
         teacher: {
           select: { firstname: true, lastname: true },
         },
-        questions: true,
+        questions:true,
         _count: {
           select: { questions: true },
         },
@@ -304,6 +304,7 @@ export const getQuestionsInBank = async (bankId, user) => {
   if (!(await canAccessQuestionBank(bankId, user))) {
     throw new Error("Cannot access questions in this bank");
   }
+
 
   const questions = await prisma.question.findMany({
     where: { bankId: parseInt(bankId) },
@@ -504,7 +505,7 @@ export const updateComprehension = async (comprehensionId, body, user) => {
       data,
     });
   } catch (error) {
-    console.log(error);
+   
     throw error;
   }
 };
