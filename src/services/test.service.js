@@ -1,4 +1,4 @@
-import e from "express";
+
 import prisma from "../config/prisma.js";
 
 const canAccessTest = async (testId, user) => {
@@ -76,7 +76,7 @@ export const createTest = async (data, user) => {
     throw error;
   }
 
-  // prevent user from setting passmanrk greater than total of question marks in the bank
+  // prevent user from setting passmark greater than total of question marks in the bank
   const totalObatainableMarks = bank.questions.reduce(
     (total, question) => total + question.marks,
     0
@@ -307,7 +307,7 @@ export const updateTest = async (testId, data, user) => {
     }
 
     
-     // prevent user from setting passmanrk greater than total of question marks in the bank
+     // prevent user from setting passmark greater than total of question marks in the bank
   const totalObatainableMarks = bank.questions.reduce(
     (total, question) => total + question.marks,
     0
