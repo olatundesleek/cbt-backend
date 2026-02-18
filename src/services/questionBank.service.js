@@ -145,6 +145,7 @@ export const getQuestionBanks = async (user, options = {}) => {
         teacher: {
           select: { firstname: true, lastname: true },
         },
+        questions: true,
         _count: {
           select: { questions: true },
         },
