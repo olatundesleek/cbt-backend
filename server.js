@@ -85,23 +85,23 @@ io.on("connection", (socket) => {
 // server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 async function startServer() {
-  const license = await verifyLicense();
+  // const license = await verifyLicense();
 
-  if (!license.ok) {
-    console.log("\n APPLICATION BLOCKED");
-    console.log(license.reason);
-    process.exit(1);
-  }
+  // if (!license.ok) {
+  //   console.log("\n APPLICATION BLOCKED");
+  //   console.log(license.reason);
+  //   process.exit(1);
+  // }
 
-  // print license state if trial
-  if (license.mode === "TRIAL") {
-    console.log(` Trial Mode — ${license.daysLeft} days left`);
-  }
+  // // print license state if trial
+  // if (license.mode === "TRIAL") {
+  //   console.log(` Trial Mode — ${license.daysLeft} days left`);
+  // }
 
-  if (license.mode === "LICENSED") {
-    console.log(` Licensed to ${license.customer}`);
-    console.log(`Expires: ${license.expires}`);
-  }
+  // if (license.mode === "LICENSED") {
+  //   console.log(` Licensed to ${license.customer}`);
+  //   console.log(`Expires: ${license.expires}`);
+  // }
 
   server.listen(PORT, () => {
     console.log(` Server running on port ${PORT}`);

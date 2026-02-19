@@ -152,8 +152,9 @@ export async function getSessionResult(sessionId, user) {
 
       // include all the questions for the test, whether answered or not
      
-      const questions = await prisma.question.findMany({
+     const questions = await prisma.question.findMany({
         where: { bankId: session.test.bankId },
+        orderBy: { id: "asc" },
       });
 
       const answersByQuestionId = new Map(
