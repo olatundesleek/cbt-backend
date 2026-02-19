@@ -98,7 +98,7 @@ export const downloadAllResultsSchema = Joi.object({
   courseId: Joi.number().integer().positive(),
   classId: Joi.number().integer().positive(),
   studentId: Joi.number().integer().positive(),
-  testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
+  testType: Joi.string().valid("TEST", "EXAM", "PRACTICE", "ALL").default("ALL"),
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso(),
   sort: Joi.string(),
