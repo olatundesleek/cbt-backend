@@ -42,7 +42,7 @@ export const getAllResultsSchema = Joi.object({
   courseId: Joi.number().integer().positive(),
   classId: Joi.number().integer().positive(),
   studentId: Joi.number().integer().positive(),
-  testType: Joi.string().valid("EXAM", "TEST", "PRACTICE"),
+  testType: Joi.string().valid("Exam", "Test", "Practice", "All").default("All"),
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso(),
   page: Joi.number().integer().min(1).default(1),
@@ -67,10 +67,10 @@ export const getStudentCourseResultsSchema = Joi.object({
     .valid("score", "date", "student", "course")
     .default("date"),
   order: Joi.string().valid("asc", "desc").default("desc"),
-  testType: Joi.string().valid("TEST", "EXAM", "ALL").default("ALL"),
+  testType: Joi.string().valid("Test", "Exam", "All").default("All"),
 }).messages({
   "date.min": "End date must be after start date",
-  "any.only": "Test type must be one of: TEST, EXAM, ALL",
+  "any.only": "Test type must be one of: Test, Exam, All",
 });
 
 // validation for downloading student results - use some of the getStudentCourseResultsSchema
