@@ -94,6 +94,7 @@ export const downloadStudentResultsSchema = Joi.object({
 export const downloadAllResultsSchema = Joi.object({
   format: Joi.string().valid("excel", "pdf").default("pdf"),
   limit: Joi.number().integer().min(1).default(10000),
+  page: Joi.number().integer().min(1).default(1),
   testId: Joi.number().integer().positive(),
   courseId: Joi.number().integer().positive(),
   classId: Joi.number().integer().positive(),
