@@ -7,7 +7,7 @@ const isSafeFloat = (value) => {
 
 //  Single Question Schema
 const singleQuestionSchema = Joi.object({
-  text: Joi.string().min(10).max(500).required(),
+  text: Joi.string().min(10).max(1000).required(),
 
   options: Joi.array().items(Joi.string().min(1)).min(2).required().messages({
     "array.base": "Options must be an array of strings",
@@ -51,7 +51,7 @@ export const createQuestionSchema = Joi.alternatives().try(
 
 //  Update Question Schema
 export const updateQuestionSchema = Joi.object({
-  text: Joi.string().min(10).max(500).optional(),
+  text: Joi.string().min(10).max(1000).optional(),
 
   options: Joi.array().items(Joi.string().min(1)).min(2).optional().messages({
     "array.base": "Options must be an array of strings",
