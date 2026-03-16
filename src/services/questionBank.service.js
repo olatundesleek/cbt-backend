@@ -308,7 +308,7 @@ export const getQuestionsInBank = async (bankId, user) => {
 
   const questions = await prisma.question.findMany({
     where: { bankId: parseInt(bankId) },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 
   return questions;
