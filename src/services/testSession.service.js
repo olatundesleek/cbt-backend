@@ -352,6 +352,41 @@ export async function submitAnswerOnly({
   }
 }
 
+// submit selected option only 
+ export async function submitSelectedOptionOnly({ sessionId, answers, studentId }) {
+  try {    const session = await prisma.testSession.findUnique({
+      where: { id: sessionId },
+      include: { test: { include: { bank: true } } },
+    });
+    if (!session) {
+      throw new Error("Session not found");
+    }
+    if (session.studentId !== studentId) {
+      throw new Error("Session does not belong to this student");
+    }
+    if (session.endedAt) {
+      throw new Error("Session has already ended");
+    } 
+    if (session.status === "COMPLETED") {
+      throw new Error("Session is already completed");
+    }
+    // save submitted answers
+    for (const a of answers) {
+     if (a.selectedOption === null || a.selectedOption === undefined) continue;
+      await submitAnswerOnly({
+        sessionId,
+        questionId: a.questionId,
+        selectedOption: a.selectedOption,
+      });
+    }
+  } catch (error) {
+    throw Object.assign(new Error("Failed to submit selected option"), {
+      statusCode: error.status || 500,
+      details: error.message,
+    });
+  }
+}
+
 /**
  * Submit answers and get next page
  */
@@ -393,7 +428,7 @@ export async function submitAnswerAndGetNext({
 
   // Save submitted answers
   for (const a of answers) {
-    if (!a.selectedOption || a.selectedOption === 0) continue;
+    if (a.selectedOption === null || a.selectedOption === undefined) continue;
     await submitAnswerOnly({
       sessionId,
       questionId: a.questionId,
@@ -484,7 +519,7 @@ export async function submitAnswerAndGetPrevious({
 
     // Save submitted answers
     for (const a of answers) {
-      if (!a.selectedOption || a.selectedOption === 0) continue;
+      if (a.selectedOption === null || a.selectedOption === undefined) continue;
       await submitAnswerOnly({
         sessionId,
         questionId: a.questionId,
