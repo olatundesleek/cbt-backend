@@ -39,15 +39,22 @@ export async function fetchQuestion(req, res, next) {
 
 export async function submitAnswerOnly(req, res, next) {
   try {
-    const sessionId = parseInt(req.params.sessionId);
-    const questionId = parseInt(req.params.questionId);
-    const { selectedOption } = req.body;
-    const data = await sessionService.submitAnswerOnly({
-      sessionId,
-      questionId,
-      selectedOption,
+    const studentId = req.user.id;
+    const { sessionId, answers } = req.body;
+
+    // Validation before passing to service
+    if (!sessionId || !Array.isArray(answers) || answers.length === 0) {
+      return res.status(400).json({ error: "Invalid request body" });
+    }
+
+    // Call the service
+    const data = await sessionService.submitSelectedOptionOnly({
+      sessionId: parseInt(sessionId),
+      answers,
+      studentId,
     });
-    return success(res, "Answer submitted", data);
+
+    return success(res, "Answers submitted successfully", data);
   } catch (err) {
     next(err);
   }
