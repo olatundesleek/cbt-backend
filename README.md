@@ -1584,6 +1584,49 @@ PATCH /api/profile
 }
 ```
 
+## Admin Update User Profile
+
+```http
+PATCH /api/profile/admin/:userId
+```
+
+**Auth:** Required (Bearer token)
+**Roles:** ADMIN only
+
+**Path Parameters**
+
+- `userId` (integer, required) - ID of user to update
+
+**Request Body** (at least one field required)
+
+```json
+{
+  "firstname": "Jane",
+  "lastname": "Doe",
+  "username": "janedoe",
+  "email": "jane@example.com",
+  "phoneNumber": "09012345678"
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "message": "User profile updated successfully",
+  "data": {
+    "id": 5,
+    "firstname": "Jane",
+    "lastname": "Doe",
+    "username": "janedoe",
+    "email": "jane@example.com",
+    "phoneNumber": "09012345678",
+    "role": "STUDENT"
+  }
+}
+```
+
 ## Update Password
 
 ```http

@@ -8,6 +8,14 @@ export const updateProfileSchema = Joi.object({
   phoneNumber: Joi.string().optional(),
 }).min(1); // At least one field must be provided
 
+export const adminUpdateProfileSchema = Joi.object({
+  firstname: Joi.string().min(2).max(100).optional(),
+  lastname: Joi.string().min(2).max(100).optional(),
+  username: Joi.string().alphanum().min(3).max(50).optional(),
+  email: Joi.string().email().optional(),
+  phoneNumber: Joi.string().optional(),
+}).min(1); // At least one field must be provided
+
 export const updatePasswordSchema = Joi.object({
   currentPassword: Joi.string().required(),
   newPassword: Joi.string().min(6).required(),
