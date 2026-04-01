@@ -39,3 +39,22 @@ export async function updatePassword(req, res, next) {
     next(err);
   }
 }
+
+export async function adminUpdateProfile(req, res, next) {
+  try {
+    const { userId } = req.params;
+    const { firstname, lastname, username, email, phoneNumber } = req.body;
+
+    const updated = await profileService.adminUpdateProfile(userId, {
+      firstname,
+      lastname,
+      username,
+      email,
+      phoneNumber,
+    });
+
+    return success(res, "User profile updated successfully", updated);
+  } catch (err) {
+    next(err);
+  }
+}
