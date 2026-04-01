@@ -83,22 +83,34 @@ export const updatePassword = async (userId, currentPassword, newPassword) => {
 };
 
 export const adminUpdateProfile = async (userId, updates) => {
+  const id = parseInt(userId);
+  if (isNaN(id)) {
+    throw new Error("Invalid user ID");
+  }
+
   if (updates.username) {
-   
-    if(updates.username.toLowerCase() === "admin" || updates.username.toLowerCase() === "administrator") {
+    const normalizedUsername = updates.username.trim().toLowerCase();
+
+    if (
+      normalizedUsername === "admin" ||
+      normalizedUsername === "administrator"
+    ) {
       throw new Error("Username 'admin' & 'administrator' are reserved");
     }
 
     const existing = await prisma.user.findUnique({
-      where: { username: updates.username },
+      where: { username: normalizedUsername },
     });
-    if (existing && existing.id !== parseInt(userId)) {
+
+    if (existing && existing.id !== id) {
       throw new Error("Username already taken");
     }
+
+    updates.username = normalizedUsername;
   }
 
   const updated = await prisma.user.update({
-    where: { id: parseInt(userId) },
+    where: { id }, 
     data: updates,
     select: {
       id: true,
