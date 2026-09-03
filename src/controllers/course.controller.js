@@ -48,12 +48,14 @@ export async function getCourses(req, res) {
     const limit = parseInt(req.query.limit) || 10;
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
+    const search = req.query.search;
 
     const courses = await courseService.getCoursesForUser(req.user, {
       page,
       limit,
       sort,
       order,
+      search,
     });
     res.json(courses);
   } catch (err) {

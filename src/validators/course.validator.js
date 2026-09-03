@@ -19,6 +19,7 @@ export const deleteCourseSchema = Joi.object({
 export const getCoursesSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(1000).default(10),
+  search: Joi.string().trim().optional(),
   sort: Joi.string()
     .valid("title", "createdAt", "teacher")
     .default("createdAt"),

@@ -21,12 +21,14 @@ export async function getClass(req, res) {
     const limit = parseInt(req.query.limit) || 10;
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
+    const search = req.query.search;
 
     const classes = await classService.getClassesForUser(req.user, {
       page,
       limit,
       sort,
       order,
+      search,
     });
     res.json(classes);
   } catch (err) {
