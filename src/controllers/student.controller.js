@@ -7,12 +7,14 @@ export async function getStudents(req, res, next) {
     const limit = parseInt(req.query.limit) || 10;
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
+    const search = req.query.search;
 
     const users = await studentService.getStudents(req.user, {
       page,
       limit,
       sort,
       order,
+      search,
     });
     return success(res, "Students fetched successfully", users);
   } catch (err) {

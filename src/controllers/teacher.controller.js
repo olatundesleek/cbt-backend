@@ -7,12 +7,14 @@ export async function getTeachers(req, res, next) {
     const limit = parseInt(req.query.limit) || 10;
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
+    const search = req.query.search;
 
     const users = await teacherService.getTeachers(req.user, {
       page,
       limit,
       sort,
       order,
+      search,
     });
     return success(res, "Teachers fetched successfully", users);
   } catch (err) {

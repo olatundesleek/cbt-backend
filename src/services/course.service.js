@@ -163,11 +163,29 @@ export async function getCoursesForUser(user, options = {}) {
     const limit = options.limit || 10;
     const sort = options.sort || "createdAt";
     const order = options.order || "desc";
+    const search = options.search?.trim();
 
     const skip = (page - 1) * limit;
 
+    const searchFilter = search
+      ? {
+          OR: [
+            { title: { contains: search, mode: "insensitive" } },
+            {
+              teacher: {
+                OR: [
+                  { firstname: { contains: search, mode: "insensitive" } },
+                  { lastname: { contains: search, mode: "insensitive" } },
+                ],
+              },
+            },
+          ],
+        }
+      : {};
+
     if (user.role === "ADMIN") {
       const courses = await prisma.course.findMany({
+        where: searchFilter,
         include: {
           teacher: { select: { id: true, firstname: true, lastname: true } },
         },
@@ -178,7 +196,7 @@ export async function getCoursesForUser(user, options = {}) {
         },
       });
 
-      const total = await prisma.course.count();
+      const total = await prisma.course.count({ where: searchFilter });
 
       return {
         data: courses,
@@ -192,8 +210,9 @@ export async function getCoursesForUser(user, options = {}) {
     }
 
     if (user.role === "TEACHER") {
+      const where = { teacherId: user.id, ...searchFilter };
       const courses = await prisma.course.findMany({
-        where: { teacherId: user.id },
+        where,
         include: {
           teacher: { select: { id: true, firstname: true, lastname: true } },
         },
@@ -205,7 +224,7 @@ export async function getCoursesForUser(user, options = {}) {
       });
 
       const total = await prisma.course.count({
-        where: { teacherId: user.id },
+        where,
       });
 
       return {
@@ -220,14 +239,16 @@ export async function getCoursesForUser(user, options = {}) {
     }
 
     if (user.role === "STUDENT") {
-      const courses = await prisma.course.findMany({
-        where: {
-          classes: {
-            some: {
-              students: { some: { id: user.id } },
-            },
+      const where = {
+        classes: {
+          some: {
+            students: { some: { id: user.id } },
           },
         },
+        ...searchFilter,
+      };
+      const courses = await prisma.course.findMany({
+        where,
         include: {
           teacher: { select: { id: true, firstname: true, lastname: true } },
         },
@@ -239,13 +260,7 @@ export async function getCoursesForUser(user, options = {}) {
       });
 
       const total = await prisma.course.count({
-        where: {
-          classes: {
-            some: {
-              students: { some: { id: user.id } },
-            },
-          },
-        },
+        where,
       });
 
       return {

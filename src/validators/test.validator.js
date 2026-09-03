@@ -105,6 +105,7 @@ export const deleteTestSchema = Joi.object({
 export const getTestsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(1000).default(10),
+  search: Joi.string().trim().optional(),
   sort: Joi.string().valid("title", "createdAt", "type").default("createdAt"),
   order: Joi.string().valid("asc", "desc").default("desc"),
 });

@@ -224,12 +224,29 @@ export const getClassesForUser = async (user, options = {}) => {
     const limit = options.limit || 10;
     const sort = options.sort || "createdAt";
     const order = options.order || "desc";
+    const search = options.search?.trim();
 
     const skip = (page - 1) * limit;
     const role = user.role;
+    const searchFilter = search
+      ? {
+          OR: [
+            { className: { contains: search, mode: "insensitive" } },
+            {
+              teacher: {
+                OR: [
+                  { firstname: { contains: search, mode: "insensitive" } },
+                  { lastname: { contains: search, mode: "insensitive" } },
+                ],
+              },
+            },
+          ],
+        }
+      : {};
 
     if (role === "ADMIN") {
       const classes = await prisma.class.findMany({
+        where: searchFilter,
         include: {
           teacher: {
             select: {
@@ -257,7 +274,7 @@ export const getClassesForUser = async (user, options = {}) => {
         })
       );
 
-      const total = await prisma.class.count();
+      const total = await prisma.class.count({ where: searchFilter });
 
       return {
         data: classesWithCount,
@@ -271,8 +288,9 @@ export const getClassesForUser = async (user, options = {}) => {
     }
 
     if (role === "TEACHER") {
+      const where = { teacherId: user.id, ...searchFilter };
       const classes = await prisma.class.findMany({
-        where: { teacherId: user.id },
+        where,
         include: {
           teacher: {
             select: {
@@ -300,7 +318,7 @@ export const getClassesForUser = async (user, options = {}) => {
       );
 
       const total = await prisma.class.count({
-        where: { teacherId: user.id },
+        where,
       });
 
       return {
@@ -332,8 +350,8 @@ export const getClassesForUser = async (user, options = {}) => {
         };
       }
 
-      const studentClass = await prisma.class.findUnique({
-        where: { id: userWithClass.classId },
+      const studentClass = await prisma.class.findFirst({
+        where: { id: userWithClass.classId, ...searchFilter },
         include: {
           teacher: {
             select: {
