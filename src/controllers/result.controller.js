@@ -44,7 +44,7 @@ export async function getAllResults(req, res, next) {
       testType: req.query.testType?.toUpperCase(), // "TEST", "EXAM", or "ALL"
       startDate: req.query.startDate,
       endDate: req.query.endDate,
-      search: req.query.search,
+      search: req.query.search?.trim(),
       sort: req.query.sort,
       order: req.query.order,
     };

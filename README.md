@@ -274,13 +274,14 @@ Response:
 #### Get All Classes
 
 \`\`\`http
-GET /api/classes
+GET /api/class
 \`\`\`
 
 **Query Parameters:**
 
 - `page` (integer, optional) - Page number for pagination. Default: `1`
 - `limit` (integer, optional) - Number of records per page. Default: `10`
+- `search` (string, optional) - Search by class name or teacher first/last name.
 - `sort` (string, optional) - Field to sort by. Default: `createdAt`
 - `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
 
@@ -316,7 +317,7 @@ Response:
 #### Update Class (Admin only)
 
 \`\`\`http
-PATCH /api/classes/:classId
+PATCH /api/class/:classId
 \`\`\`
 
 Request body:
@@ -345,7 +346,7 @@ Response:
 #### Delete Class (Admin only)
 
 \`\`\`http
-DELETE /api/classes/:classId
+DELETE /api/class/:classId
 \`\`\`
 
 Response:
@@ -371,6 +372,7 @@ Fetch all teachers in the system. Accessible only by users with the ADMIN role.
 
 - `page` (integer, optional) - Page number for pagination. Default: `1`
 - `limit` (integer, optional) - Number of records per page. Default: `10`
+- `search` (string, optional) - Search by teacher first name, last name, or username.
 - `sort` (string, optional) - Field to sort by. Default: `createdAt`
 - `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
 
@@ -536,6 +538,7 @@ GET /api/courses
 
 - `page` (integer, optional) - Page number for pagination. Default: `1`
 - `limit` (integer, optional) - Number of records per page. Default: `10`
+- `search` (string, optional) - Search by course title or teacher first/last name.
 - `sort` (string, optional) - Field to sort by. Default: `createdAt`
 - `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
 
@@ -734,6 +737,7 @@ GET /api/tests
 
 - `page` (integer, optional) - Page number for pagination. Default: `1`
 - `limit` (integer, optional) - Number of records per page. Default: `10`
+- `search` (string, optional) - Search by test title or course title.
 - `sort` (string, optional) - Field to sort by. Default: `createdAt`
 - `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
 
@@ -1428,16 +1432,10 @@ text,options,answer,marks
 #### Start Test Session
 
 ```http
-POST /api/sessions
+POST /api/sessions/start/:testId
 ```
 
-Request body:
-
-```json
-{
-  "testId": 1
-}
-```
+No request body is required. The test ID is supplied in the URL.
 
 Response:
 
@@ -1457,15 +1455,68 @@ Response:
 #### Submit Answer
 
 ```http
-POST /api/sessions/:sessionId/answers
+POST /api/sessions/:sessionId/questions/:questionId/submit
 ```
 
 Request body:
 
 ```json
 {
-  "questionId": 1,
-  "selectedOption": "1"
+  "sessionId": 1,
+  "answers": [
+    {
+      "questionId": 2,
+      "selectedOption": "1"
+    }
+  ]
+}
+```
+
+#### Fetch Session Questions
+
+```http
+GET /api/sessions/:sessionId/questions/:questionNumber
+```
+
+Fetch questions beginning at the requested number for the authenticated student.
+
+#### Submit Answer and Get Next Question
+
+```http
+POST /api/sessions/questions-next/answer
+```
+
+Request body:
+
+```json
+{
+  "sessionId": 1,
+  "answers": [
+    {
+      "questionId": 2,
+      "selectedOption": "1"
+    }
+  ]
+}
+```
+
+#### Submit Answer and Get Previous Question
+
+```http
+POST /api/sessions/questions-previous/answer
+```
+
+Request body:
+
+```json
+{
+  "sessionId": 1,
+  "answers": [
+    {
+      "questionId": 2,
+      "selectedOption": "1"
+    }
+  ]
 }
 ```
 
@@ -1487,7 +1538,7 @@ Response:
 #### End Test Session
 
 ```http
-POST /api/sessions/:sessionId/submit
+POST /api/sessions/:sessionId/finish
 ```
 
 Response:
@@ -1672,6 +1723,7 @@ GET /api/students
 
 - `page` (integer, optional) - Page number for pagination. Default: `1`
 - `limit` (integer, optional) - Number of records per page. Default: `10`
+- `search` (string, optional) - Search by student first name, last name, or username.
 - `sort` (string, optional) - Field to sort by. Default: `createdAt`
 - `order` (string, optional) - Sort order: `asc` or `desc`. Default: `desc`
 
@@ -2148,6 +2200,25 @@ Retrieve aggregated and detailed results for a student across their courses with
 - The response includes pagination metadata for managing large result sets
 - Students can only see results for tests in courses they are enrolled in
 - Test scores and status may be hidden (show as "unreleased") depending on test settings
+
+## Release Test Results (Admin only)
+
+```http
+PATCH /api/results/test/:testId/release
+```
+
+Toggle whether students can view results for a test.
+
+**Request body:**
+
+```json
+{
+  "showResult": true
+}
+```
+
+**Auth:** Required (Bearer token)
+**Roles:** ADMIN only
 
 ## Create Notification
 
