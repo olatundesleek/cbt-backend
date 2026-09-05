@@ -43,12 +43,14 @@ export const getNotificationsController = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const sort = req.query.sort || "createdAt";
     const order = req.query.order || "desc";
+    const search = req.query.search;
 
     const notifications = await getNotificationsForUser(req.user, {
       page,
       limit,
       sort,
       order,
+      search,
     });
     success(res, "Notifications fetched successfully", notifications);
   } catch (err) {

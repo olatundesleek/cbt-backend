@@ -22,18 +22,39 @@ export const getNotificationsForUser = async (user, options = {}) => {
   const limit = options.limit || 10;
   const sort = options.sort || "createdAt";
   const order = options.order || "desc";
+  const search = options.search?.trim();
 
   const skip = (page - 1) * limit;
   const role = user.role;
+  const notificationTypes = [
+    "GENERAL",
+    "STUDENT",
+    "TEACHER",
+    "CLASS",
+    "COURSE",
+  ];
+  const searchConditions = search
+    ? [
+        { title: { contains: search, mode: "insensitive" } },
+        { message: { contains: search, mode: "insensitive" } },
+        ...(notificationTypes.includes(search.toUpperCase())
+          ? [{ type: { equals: search.toUpperCase() } }]
+          : []),
+      ]
+    : [];
+  const searchFilter = search
+    ? { OR: searchConditions }
+    : {};
 
   if (role === "ADMIN") {
     const data = await prisma.notification.findMany({
+      where: searchFilter,
       skip,
       take: limit,
       orderBy: { [sort]: order },
     });
 
-    const total = await prisma.notification.count();
+    const total = await prisma.notification.count({ where: searchFilter });
 
     return {
       data,
@@ -67,15 +88,19 @@ export const getNotificationsForUser = async (user, options = {}) => {
     });
   }
 
+  const where = {
+    AND: [{ OR: conditions }, searchFilter],
+  };
+
   const data = await prisma.notification.findMany({
-    where: { OR: conditions },
+    where,
     skip,
     take: limit,
     orderBy: { [sort]: order },
   });
 
   const total = await prisma.notification.count({
-    where: { OR: conditions },
+    where,
   });
 
   return {

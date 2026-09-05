@@ -126,10 +126,27 @@ export const getQuestionBanks = async (user, options = {}) => {
     const limit = options.limit || 10;
     const sort = options.sort || "createdAt";
     const order = options.order || "desc";
+    const search = options.search?.trim();
 
     const skip = (page - 1) * limit;
 
     const where = {};
+
+    if (search) {
+      where.OR = [
+        { questionBankName: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { course: { title: { contains: search, mode: "insensitive" } } },
+        {
+          teacher: {
+            OR: [
+              { firstname: { contains: search, mode: "insensitive" } },
+              { lastname: { contains: search, mode: "insensitive" } },
+            ],
+          },
+        },
+      ];
+    }
 
     // If not admin, only show own banks
     if (user.role === "TEACHER") {
