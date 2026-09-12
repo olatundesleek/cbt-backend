@@ -313,8 +313,7 @@ export const updateTest = async (testId, data, user) => {
     0
   );
 
-  console.log("passmark" ,data.passMark);
-  console.log("totalObatainableMarks" ,totalObatainableMarks);
+
   
 
   if (data.passMark > totalObatainableMarks) {
