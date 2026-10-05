@@ -149,9 +149,12 @@ Request body:
 ```json
 {
   "username": "teacher1",
-  "password": "password123"
+  "password": "password123",
+  "systemId": "client-device-id"
 }
 ```
+
+`systemId` identifies the client system for concurrent-login checks.
 
 Response:
 

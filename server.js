@@ -3,6 +3,13 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server as IOServer } from "socket.io";
 import { setIo } from "./src/utils/socket.js";
+import { verifyToken } from "./src/utils/jwt.js";
+import {
+  attachSocket,
+  detachSocket,
+  getLogin,
+  normalizeUsername,
+} from "./src/utils/loginManager.js";
 import { verifyLicense } from "./src/utils/verifyLicense.js";
 
 // Load env file dynamically based on NODE_ENV
@@ -65,6 +72,33 @@ setIo(io);
 // Socket.IO Events
 // =========================
 io.on("connection", (socket) => {
+  const authToken =
+    socket.handshake.auth?.token ||
+    socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, "") ||
+    null;
+
+  if (authToken) {
+    try {
+      const payload = verifyToken(authToken);
+      const username = normalizeUsername(payload.username);
+      const login = getLogin(username);
+
+      if (login && login.loginId === payload.loginId) {
+        attachSocket(username, payload.loginId, socket.id);
+      }
+    } catch (e) {}
+  }
+
+  socket.on("authenticate_login", ({ username, loginId }) => {
+    if (!username || !loginId) return;
+
+    const normalizedUsername = normalizeUsername(username);
+    const activeLogin = getLogin(normalizedUsername);
+    if (activeLogin && activeLogin.loginId === loginId) {
+      attachSocket(normalizedUsername, loginId, socket.id);
+    }
+  });
+
   socket.on("join_session", (sessionId) => {
     try {
       socket.join(`session_${sessionId}`);
@@ -78,6 +112,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    detachSocket(socket.id);
     console.log("Client disconnected:", socket.id);
   });
 });

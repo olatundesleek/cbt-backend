@@ -1,6 +1,14 @@
+import crypto from "crypto";
 import prisma from "../config/prisma.js";
 import bcrypt from "bcryptjs";
 import { signToken } from "../utils/jwt.js";
+import {
+  createLogin,
+  detectBrowser,
+  detectDevice,
+  getLogin,
+  normalizeUsername,
+} from "../utils/loginManager.js";
 
 export async function register({
   firstname,
@@ -36,10 +44,23 @@ export async function register({
     },
   };
 }
-export async function login({ username, password }) {
+export async function login({
+  username,
+  password,
+  systemId,
+  requestInfo = {},
+}) {
   try {
-    username = username.toLowerCase();
-    const user = await prisma.user.findUnique({ where: { username } });
+    const normalizedUsername = normalizeUsername(username);
+    const userAgent = requestInfo.userAgent || "";
+    const browser = detectBrowser(userAgent);
+    const device = detectDevice(userAgent);
+    const ip = requestInfo.ip || "unknown";
+
+    console.log(`Login attempt: username=${normalizedUsername}, systemId=${systemId}, device=${device}, browser=${browser}, ip=${ip}`
+    );
+
+    const user = await prisma.user.findUnique({ where: { username: normalizedUsername } });
     if (!user) {
       const error = new Error("unable to login");
       error.status = 401;
@@ -53,11 +74,38 @@ export async function login({ username, password }) {
       error.status = 401;
       throw error;
     }
+
+    const existingLogin = getLogin(normalizedUsername);
+    if (existingLogin && existingLogin.systemId !== systemId) {
+      const error = new Error("You are already logged in on another system.");
+      error.status = 409;
+      error.code = "ALREADY_LOGGED_IN";
+      error.login = {
+        device: existingLogin.device,
+        browser: existingLogin.browser,
+        ip: existingLogin.ip,
+        loginTime: existingLogin.loginTime,
+      };
+      throw error;
+    }
+
+    const loginId = crypto.randomUUID();
+    const activeLogin = createLogin({
+      username: user.username,
+      loginId,
+      systemId,
+      device,
+      browser,
+      ip,
+    });
+
     const token = signToken({
       id: user.id,
       role: user.role,
       username: user.username,
+      loginId,
     });
+
     return {
       user: {
         id: user.id,
@@ -67,6 +115,7 @@ export async function login({ username, password }) {
         role: user.role,
       },
       token,
+      login: activeLogin,
     };
   } catch (error) {
     throw error;

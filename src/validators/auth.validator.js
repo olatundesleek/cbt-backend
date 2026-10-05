@@ -16,7 +16,8 @@ export const registerSchema = Joi.object({
 export const loginSchema = Joi.object({
   username: Joi.string().required(),
   password: Joi.string().required(),
-});
+  systemId: Joi.string().required(),
+}).unknown(false);
 
 export const updateUsersPasswordSchema = Joi.object({
   newPassword: Joi.string().min(6).required(),
