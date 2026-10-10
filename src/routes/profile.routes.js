@@ -8,6 +8,7 @@ import {
 import { validateBody } from "../middleware/validate.middleware.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
+import { upload } from "../utils/mutler.js";
 
 const router = express.Router();
 
@@ -35,6 +36,7 @@ router.patch(
   "/admin/:userId",
   authenticate,
   authorizeRoles("ADMIN"),
+  upload.single("profilePicture"),
   validateBody(adminUpdateProfileSchema),
   profileController.adminUpdateProfile
 );

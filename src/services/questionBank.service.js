@@ -364,7 +364,7 @@ export const uploadBankImages = async (bankId, files, body, user) => {
     } else {
       const uploaded = await uploadToCloudinary(
         file.path,
-        `question-banks/${bankId}`
+        `questionbankimages/${bankId}`
       );
       imageUrl = uploaded.secure_url;
     }
@@ -423,7 +423,7 @@ export const updateBankImage = async (imageId, data, file, user) => {
     } else {
       const uploaded = await uploadToCloudinary(
         file.path,
-        `question-banks/${image.bankId}`
+        `questionbankimages/${image.bankId}`
       );
       imageUrl = uploaded.secure_url;
     }
