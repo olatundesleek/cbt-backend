@@ -14,7 +14,7 @@ export const adminUpdateProfileSchema = Joi.object({
   username: Joi.string().trim().alphanum().min(3).max(50).lowercase().optional(),
  email: Joi.string().trim().email().lowercase().empty("").optional(),
   phoneNumber: Joi.string().trim().pattern(/^[0-9+()\-\s]+$/).empty("").optional(),
-}).min(1);
+});
 
 export const updatePasswordSchema = Joi.object({
   currentPassword: Joi.string().required(),

@@ -12,19 +12,18 @@ export const uploadToCloudinary = async (
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 
-  const options = { folder };
+  const options = { folder: `cbt/${folder}` };
+
   if (public_id) {
     options.public_id = public_id;
     options.overwrite = true;
   }
 
   try {
-    const result = await cloudinary.uploader.upload(filePath, { options });
+    return await cloudinary.uploader.upload(filePath, options);
+  } finally {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
-    return result;
-  } catch (err) {
-    throw err;
   }
 };

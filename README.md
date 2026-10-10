@@ -87,6 +87,13 @@ A robust backend system for managing computer-based tests, built with Express.js
    npx prisma migrate dev --name init
    ```
 
+   For an existing development database, apply pending migrations (including
+   the `profilePicture` field migration) with:
+
+   ```bash
+   npx prisma migrate dev
+   ```
+
 5. Start the server:
    ```bash
    npm start
@@ -152,6 +159,23 @@ Request body:
   "password": "password123"
 }
 ```
+
+The backend issues a persistent, HTTP-only `cbt_browser_id` cookie and uses it
+for concurrent-login checks. Clients must not send a browser ID; when the cookie
+is missing or invalid, the backend generates one and sets it after a successful
+login. The cookie is refreshed on successful login without changing a valid ID
+and has a one-year lifetime.
+
+The JWT and `reqtoken` cookie both expire after five hours. Active login records
+are held in memory, and records with no authenticated activity for five hours
+are removed. A cleanup sweep runs hourly; expired records are also removed when
+the login manager is accessed.
+
+Logging in as the same username from another browser profile is rejected while
+that username has an active login. When a different student successfully logs
+in using a browser profile with an active login for another username, the old
+username's in-memory login record is removed. Logging out clears the
+authentication cookie but leaves `cbt_browser_id` intact.
 
 Response:
 
@@ -1037,6 +1061,12 @@ POST /api/question-banks/:bankId/images
 | bankImages | file[] | Image files to upload (max 10) |
 | description | string | Optional description for all images |
 
+In production, uploaded images are stored in Cloudinary under
+`cbt/questionbankimages/{bankId}`. For example, images for bank `25` are stored
+under `cbt/questionbankimages/25`. Both new uploads and image replacements use
+this folder structure. In development, images continue to be saved locally in
+`uploads/question-banks`.
+
 **Response**
 
 ```json
@@ -1597,6 +1627,7 @@ GET /api/profile
     "username": "johnny",
     "email": "john@example.com",
     "phoneNumber": "387878343",
+    "profilePicture": "https://res.cloudinary.com/.../image/upload/...",
     "role": "student"
   }
 }
@@ -1649,17 +1680,17 @@ PATCH /api/profile/admin/:userId
 
 - `userId` (integer, required) - ID of user to update
 
-**Request Body** (at least one field required)
+**Request** (multipart/form-data; profile fields and/or a profile picture)
 
-```json
-{
-  "firstname": "Jane",
-  "lastname": "Doe",
-  "username": "janedoe",
-  "email": "jane@example.com",
-  "phoneNumber": "09012345678"
-}
-```
+Text fields are optional: `firstname`, `lastname`, `username`, `email`, and
+`phoneNumber`. To upload a profile picture, include the image file using the
+field name `profilePicture`. An image upload can be sent without any text
+fields. The existing upload middleware limits images to 5 MB.
+
+In production, the uploaded profile picture is stored in Cloudinary under
+`cbt/profile-pictures` with a per-user public ID. Outside production, the file
+is stored in the local `uploads` directory. The returned user profile includes
+the `profilePicture` URL.
 
 **Response**
 
@@ -1674,6 +1705,7 @@ PATCH /api/profile/admin/:userId
     "username": "janedoe",
     "email": "jane@example.com",
     "phoneNumber": "09012345678",
+    "profilePicture": "https://res.cloudinary.com/.../image/upload/...",
     "role": "STUDENT"
   }
 }

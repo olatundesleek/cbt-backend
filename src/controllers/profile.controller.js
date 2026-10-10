@@ -51,7 +51,7 @@ export async function adminUpdateProfile(req, res, next) {
       username,
       email,
       phoneNumber,
-    });
+    }, req.file);
 
     return success(res, "User profile updated successfully", updated);
   } catch (err) {

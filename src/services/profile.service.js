@@ -1,5 +1,7 @@
 import prisma from "../config/prisma.js";
 import bcrypt from "bcryptjs";
+import path from "path";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 export const getProfile = async (userId) => {
   const user = await prisma.user.findUnique({
@@ -12,6 +14,7 @@ export const getProfile = async (userId) => {
       role: true,
       email: true,
       phoneNumber: true,
+      profilePicture: true,
       class: true, // Include class details if student
       teacherOf: {
         select: {
@@ -47,6 +50,7 @@ export const updateProfile = async (userId, updates) => {
       username: true,
       email: true,
       phoneNumber: true,
+      profilePicture: true,
       role: true,
       class: true,
       teacherOf: {
@@ -82,10 +86,16 @@ export const updatePassword = async (userId, currentPassword, newPassword) => {
   });
 };
 
-export const adminUpdateProfile = async (userId, updates) => {
+export const adminUpdateProfile = async (userId, updates, file) => {
   const id = parseInt(userId);
   if (isNaN(id)) {
     throw new Error("Invalid user ID");
+  }
+
+  if (!file && Object.values(updates).every((value) => value === undefined)) {
+    const error = new Error("At least one profile field or profile picture is required");
+    error.status = 400;
+    throw error;
   }
 
   if (updates.username) {
@@ -109,6 +119,23 @@ export const adminUpdateProfile = async (userId, updates) => {
     updates.username = normalizedUsername;
   }
 
+  if (file) {
+    if (process.env.NODE_ENV === "production") {
+      const uploaded = await uploadToCloudinary(
+        file.path,
+        "profile-pictures",
+        `user-${id}`
+      );
+      updates.profilePicture = uploaded.secure_url;
+    } else {
+      const baseUrl =
+        process.env.NODE_ENV === "development"
+          ? `http://localhost:${process.env.PORT || 4000}`
+          : "";
+      updates.profilePicture = `${baseUrl}/uploads/${path.basename(file.path)}`;
+    }
+  }
+
   const updated = await prisma.user.update({
     where: { id }, 
     data: updates,
@@ -120,6 +147,7 @@ export const adminUpdateProfile = async (userId, updates) => {
       email: true,
       phoneNumber: true,
       role: true,
+      profilePicture: true,
     },
   });
 

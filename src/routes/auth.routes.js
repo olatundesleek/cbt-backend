@@ -4,6 +4,7 @@ import {
   validateBody,
   validateParams,
 } from "../middleware/validate.middleware.js";
+import * as authController from "../controllers/auth.controller.js";
 import {
   registerSchema,
   loginSchema,
@@ -24,6 +25,7 @@ router.post(
 );
 
 router.post("/login", validateBody(loginSchema), auth.login);
+router.get("/session", authenticate, auth.getSession);
 
 // Clear auth cookie on logout
 router.post("/logout", authenticate, auth.logout);
@@ -45,6 +47,31 @@ router.patch(
   validateBody(updateUsersPasswordSchema),
   authorizeRoles("ADMIN"),
   auth.changeUsersPassword
+);
+
+router.get(
+  "/login-sessions",
+  authenticate,
+  authorizeRoles("ADMIN"),
+  authController.getAllLoginSessions
+);
+router.get(
+  "/login-sessions/:username",
+  authenticate,
+  authorizeRoles("ADMIN"),
+  authController.getLoginSessionByUsername
+);
+router.post(
+  "/login-sessions/:username/logout",
+  authenticate,
+  authorizeRoles("ADMIN"),
+  authController.forceLogoutUser
+);
+router.post(
+  "/login-sessions/logout-all",
+  authenticate,
+  authorizeRoles("ADMIN"),
+  authController.logoutAllUsers
 );
 
 export default router;

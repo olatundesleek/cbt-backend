@@ -36,6 +36,7 @@ model User {
   role         Role            @default(STUDENT)
   email        String?
   phoneNumber  String?
+  profilePicture String?
   classId      Int?
   class        Class?          @relation(fields: [classId], references: [id])
   teacherOf    Class[]         @relation("ClassTeacher")
@@ -229,5 +230,4 @@ enum SystemStatus {
   ACTIVE
   MAINTENANCE
 }
-
 
