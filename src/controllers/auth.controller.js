@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import * as authService from "../services/auth.service.js";
 import { success, error } from "../utils/response.js";
 import {
@@ -12,6 +13,11 @@ import { getIo } from "../utils/socket.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+
+const browserIdCookie = "cbt_browser_id";
+const browserIdPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function register(req, res) {
   try {
     const out = await authService.register(req.body);
@@ -23,15 +29,29 @@ export async function register(req, res) {
 
 export async function login(req, res, next) {
   try {
-    const { username, password, systemId } = req.body;
+    const { username, password } = req.body;
+    let browserId = req.cookies?.[browserIdCookie];
+    const hasValidBrowserId =
+      typeof browserId === "string" && browserIdPattern.test(browserId);
+
+    if (!hasValidBrowserId) browserId = crypto.randomUUID();
+
     const out = await authService.login({
       username,
       password,
-      systemId,
+      browserId,
       requestInfo: {
         ip: resolveClientIp(req),
         userAgent: req.get("user-agent"),
       },
+    });
+
+    res.cookie(browserIdCookie, browserId, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie("reqtoken", out.token, {
@@ -39,6 +59,7 @@ export async function login(req, res, next) {
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
       path: "/",
+      maxAge: 5 * 60 * 60 * 1000
     });
     const data = { data: out.user, token: out.token };
     success(res, "User logged in successfully", data);
@@ -59,13 +80,11 @@ export async function login(req, res, next) {
 export async function logout(req, res) {
   try {
     const username = normalizeUsername(req.user.username);
-    const loginId = req.tokenPayload?.loginId;
+    const loginId = req.loginId;
     const removed = removeLogin(username, loginId);
 
     res.clearCookie("reqtoken", {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
       path: "/",
     });
 

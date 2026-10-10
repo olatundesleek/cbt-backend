@@ -2,9 +2,22 @@ import crypto from "crypto";
 
 export const activeLogins = new Map();
 
+const inactiveLoginTtlMs = 5 * 60 * 60 * 1000;
+
 export function normalizeUsername(username) {
   return String(username ?? "").trim().toLowerCase();
 }
+
+export function clearInactiveLogins(now = Date.now()) {
+  for (const [username, login] of activeLogins.entries()) {
+    if (now - Date.parse(login.lastActivity) >= inactiveLoginTtlMs) {
+      activeLogins.delete(username);
+    }
+  }
+}
+
+const inactiveLoginCleanup = setInterval(clearInactiveLogins, 60 * 60 * 1000);
+inactiveLoginCleanup.unref();
 
 export function detectBrowser(userAgent = "") {
   const ua = String(userAgent || "").toLowerCase();
@@ -45,7 +58,7 @@ export function resolveClientIp(req = {}) {
 function createLoginRecord({
   username,
   loginId,
-  systemId,
+  browserId,
   device,
   browser,
   ip,
@@ -56,7 +69,7 @@ function createLoginRecord({
   return {
     username: normalizeUsername(username),
     loginId,
-    systemId: systemId ?? null,
+    browserId: browserId ?? null,
     device: device ?? "Unknown",
     browser: browser ?? "Unknown",
     ip: ip ?? null,
@@ -67,17 +80,19 @@ function createLoginRecord({
 }
 
 export function getLogin(username) {
+  clearInactiveLogins();
   return activeLogins.get(normalizeUsername(username));
 }
 
 export function getAllLogins() {
+  clearInactiveLogins();
   return Array.from(activeLogins.values());
 }
 
 export function createLogin({
   username,
   loginId = crypto.randomUUID(),
-  systemId,
+  browserId,
   device,
   browser,
   ip,
@@ -87,7 +102,7 @@ export function createLogin({
   const login = createLoginRecord({
     username: key,
     loginId,
-    systemId,
+    browserId,
     device,
     browser,
     ip,
@@ -105,6 +120,7 @@ export function isLoginValid(username, loginId) {
 }
 
 export function updateActivity(username) {
+  clearInactiveLogins();
   const activeLogin = getLogin(username);
   if (!activeLogin) return null;
 

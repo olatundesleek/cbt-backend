@@ -7,7 +7,9 @@ import {
   detectBrowser,
   detectDevice,
   getLogin,
+  getAllLogins,
   normalizeUsername,
+  removeLogin,
 } from "../utils/loginManager.js";
 
 export async function register({
@@ -47,7 +49,7 @@ export async function register({
 export async function login({
   username,
   password,
-  systemId,
+  browserId,
   requestInfo = {},
 }) {
   try {
@@ -57,8 +59,8 @@ export async function login({
     const device = detectDevice(userAgent);
     const ip = requestInfo.ip || "unknown";
 
-    console.log(`Login attempt: username=${normalizedUsername}, systemId=${systemId}, device=${device}, browser=${browser}, ip=${ip}`
-    );
+    // console.log(`Login attempt: username=${normalizedUsername}, device=${device}, browser=${browser}, ip=${ip}`
+    // );
 
     const user = await prisma.user.findUnique({ where: { username: normalizedUsername } });
     if (!user) {
@@ -76,7 +78,7 @@ export async function login({
     }
 
     const existingLogin = getLogin(normalizedUsername);
-    if (existingLogin && existingLogin.systemId !== systemId) {
+    if (existingLogin && existingLogin.browserId !== browserId) {
       const error = new Error("You are already logged in on another system.");
       error.status = 409;
       error.code = "ALREADY_LOGGED_IN";
@@ -89,11 +91,17 @@ export async function login({
       throw error;
     }
 
+    for (const login of getAllLogins()) {
+      if (login.username !== normalizedUsername && login.browserId === browserId) {
+        removeLogin(login.username, login.loginId);
+      }
+    }
+
     const loginId = crypto.randomUUID();
     const activeLogin = createLogin({
       username: user.username,
       loginId,
-      systemId,
+      browserId,
       device,
       browser,
       ip,
@@ -115,7 +123,6 @@ export async function login({
         role: user.role,
       },
       token,
-      login: activeLogin,
     };
   } catch (error) {
     throw error;

@@ -44,12 +44,12 @@ const isProduction = process.env.NODE_ENV === "production";
 const io = new IOServer(server, {
   cors: {
     origin: (origin, callback) => {
-      // ✅ Allow everything when not in production
+    
       if (!isProduction) {
         return callback(null, true);
       }
 
-      // ✅ In production, apply whitelist rules
+     
       if (
         !origin || // allow curl, mobile apps
         allowedOrigins.includes(origin) ||

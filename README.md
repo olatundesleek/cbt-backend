@@ -149,12 +149,13 @@ Request body:
 ```json
 {
   "username": "teacher1",
-  "password": "password123",
-  "systemId": "client-device-id"
+  "password": "password123"
 }
 ```
 
-`systemId` identifies the client system for concurrent-login checks.
+The backend issues a persistent, HTTP-only `cbt_browser_id` cookie and uses it
+for concurrent-login checks. Clients must not send a browser ID; when the cookie
+is missing or invalid, the backend sets a replacement on successful login.
 
 Response:
 

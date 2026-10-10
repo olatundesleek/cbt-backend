@@ -8,23 +8,29 @@ import {
 } from "../utils/loginManager.js";
 
 export async function authenticate(req, res, next) {
+  let token = req.cookies?.reqtoken;
+
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    }
+  }
+
+  if (!token) return res.status(401).json({ success: false, message: "No token" });
+
+  let payload;
   try {
-    let token = req.cookies?.reqtoken;
+    payload = verifyToken(token);
+  } catch {
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
 
-    if (!token && req.headers.authorization) {
-      const authHeader = req.headers.authorization;
-      if (authHeader.startsWith("Bearer ")) {
-        token = authHeader.substring(7);
-      }
-    }
+  if (!payload?.username || !payload?.loginId) {
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
 
-    if (!token) return res.status(401).json({ success: false, message: "No token" });
-
-    const payload = verifyToken(token);
-    if (!payload?.username || !payload?.loginId) {
-      return res.status(401).json({ success: false, message: "Invalid token" });
-    }
-
+  try {
     const username = normalizeUsername(payload.username);
     const activeLogin = getLogin(username);
     if (!activeLogin || !isLoginValid(username, payload.loginId)) {
@@ -36,11 +42,11 @@ export async function authenticate(req, res, next) {
 
     req.user = user;
     req.login = activeLogin;
-    req.tokenPayload = payload;
+    req.loginId = payload.loginId;
     updateActivity(username);
 
     next();
-  } catch (e) {
-    return res.status(401).json({ success: false, message: "Invalid token" });
+  } catch (error) {
+    next(error);
   }
 }
