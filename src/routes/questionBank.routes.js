@@ -5,7 +5,7 @@ import {
   validateQuery,
 } from "../middleware/validate.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, checkDemoUser } from '../middleware/auth.middleware.js';
 import * as questionBankController from "../controllers/questionBank.controller.js";
 import {
   createQuestionBankSchema,
@@ -66,11 +66,12 @@ router.patch(
 
 // Delete a question bank
 router.delete(
-  "/:bankId",
+  '/:bankId',
   validateParams(getQuestionsSchema),
   authenticate,
-  authorizeRoles("TEACHER", "ADMIN"),
-  questionBankController.deleteQuestionBank
+  authorizeRoles('TEACHER', 'ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
+  questionBankController.deleteQuestionBank,
 );
 
 // Get questions in a bank
@@ -104,11 +105,12 @@ router.patch(
 
 // Delete single image
 router.delete(
-  "/images/:id",
+  '/images/:id',
   authenticate,
-  authorizeRoles("TEACHER", "ADMIN"),
+  authorizeRoles('TEACHER', 'ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
   validateParams(deleteImageSchema),
-  questionBankController.deleteBankImage
+  questionBankController.deleteBankImage,
 );
 
 router.post(
@@ -129,11 +131,12 @@ router.patch(
 );
 
 router.delete(
-  "/comprehensions/:id",
+  '/comprehensions/:id',
   authenticate,
-  authorizeRoles("TEACHER", "ADMIN"),
+  authorizeRoles('TEACHER', 'ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
   validateParams(deleteComprehensionSchema),
-  questionBankController.deleteComprehension
+  questionBankController.deleteComprehension,
 );
 
 // // fetch all comprehensions for a question bank

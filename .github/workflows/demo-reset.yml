@@ -1,0 +1,42 @@
+name: Reset CBT Demo Data
+
+on:
+  schedule:
+    # Every day at 00:00 UTC (01:00 in Nigeria during WAT)
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-reset
+  cancel-in-progress: false
+
+jobs:
+  reset-demo-data:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply pending database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Reset demo database data
+        run: npm run prisma:demo-seed

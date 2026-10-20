@@ -20,7 +20,10 @@ const browserIdPattern =
 
 export async function register(req, res) {
   try {
-    const out = await authService.register(req.body);
+    const out = await authService.register({
+      isDemoUser: req.user.isDemoUser,
+      ...req.body,
+    });
     success(res, "User registered successfully", out, 201);
   } catch (err) {
     error(res, err.message, 400);

@@ -104,16 +104,16 @@ async function main() {
     await prisma.question.createMany({
       data: [
         {
-          text: "What is 2 + 2?",
-          options: JSON.stringify(["2", "3", "4", "5"]),
-          answer: "4",
+          text: 'What is 2 + 2?',
+          options: ['2', '3', '4', '5'],
+          answer: '4',
           marks: 1,
           bankId: bank.id,
         },
         {
-          text: "Solve for x: 3x = 9",
-          options: JSON.stringify(["1", "2", "3", "4"]),
-          answer: "3",
+          text: 'Solve for x: 3x = 9',
+          options: ['1', '2', '3', '4'],
+          answer: '3',
           marks: 1,
           bankId: bank.id,
         },
