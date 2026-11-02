@@ -47,6 +47,7 @@ model User {
   testSessions TestSession[]
   notification Notification[]
   createdAt    DateTime        @default(now())
+  isDemoUser    Boolean         @default(false) // Indicates if the user is a demo user
 }
 
 model Class {

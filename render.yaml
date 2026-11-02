@@ -2,5 +2,5 @@ services:
   - type: web
     name: your-service
     env: node
-    buildCommand: "npm ci"
-    startCommand: "node server.js"
+    buildCommand: npm ci
+    startCommand: node server.js

@@ -11,7 +11,7 @@ import {
 import { validateBody } from "../middleware/validate.middleware.js";
 import { validateParams } from "../middleware/validate.middleware.js";
 import { validateQuery } from "../middleware/validate.middleware.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, checkDemoUser } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from "../middleware/role.middleware.js";
 const router = express.Router();
 
@@ -48,11 +48,12 @@ router.post(
 );
 
 router.delete(
-  "/:classId",
+  '/:classId',
   validateParams(deleteClassSchema),
   authenticate,
-  authorizeRoles("ADMIN"),
-  classController.deleteClass
+  authorizeRoles('ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
+  classController.deleteClass,
 );
 
 // assign-student moved to student routes

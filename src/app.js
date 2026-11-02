@@ -22,11 +22,12 @@ import { errorHandler } from "./middleware/errorHandler.js";
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://192.168.1.120",
-  "http://cbt.local:3000",
-  "http://192.168.1.120:3000",
-  "https://escrow-rouge.vercel.app",
+  'http://localhost:3000',
+  'http://192.168.1.120',
+  'http://cbt.local:3000',
+  'http://192.168.1.120:3000',
+  'https://escrow-rouge.vercel.app',
+  'https://cbt-frontend-beige.vercel.app',
 ];
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -44,7 +45,7 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   })

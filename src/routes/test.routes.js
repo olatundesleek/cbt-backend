@@ -13,7 +13,7 @@ import {
   deleteTestSchema,
   getTestsSchema,
 } from "../validators/test.validator.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, checkDemoUser } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -45,11 +45,12 @@ router.patch(
 );
 
 router.delete(
-  "/:testId",
+  '/:testId',
   authenticate,
-  authorizeRoles("TEACHER", "ADMIN"),
+  authorizeRoles('TEACHER', 'ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
   validateParams(deleteTestSchema),
-  testController.deleteTest
+  testController.deleteTest,
 );
 
 // Get tests (filtered based on user role)

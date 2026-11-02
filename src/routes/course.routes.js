@@ -6,7 +6,7 @@ import {
   deleteCourseSchema,
   getCoursesSchema,
 } from "../validators/course.validator.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, checkDemoUser } from '../middleware/auth.middleware.js';
 import { validateBody } from "../middleware/validate.middleware.js";
 import { validateParams } from "../middleware/validate.middleware.js";
 import { validateQuery } from "../middleware/validate.middleware.js";
@@ -40,10 +40,11 @@ router.patch(
 
 // delete
 router.delete(
-  "/:courseId",
+  '/:courseId',
   validateParams(deleteCourseSchema),
   authenticate,
-  authorizeRoles("ADMIN"),
-  courseController.deleteCourse
+  checkDemoUser, // Middleware to check if the user is a demo user
+  authorizeRoles('ADMIN'),
+  courseController.deleteCourse,
 );
 export default router;

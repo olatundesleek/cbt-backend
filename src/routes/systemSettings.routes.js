@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, checkDemoUser } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from "../middleware/role.middleware.js";
 import { validateBody } from "../middleware/validate.middleware.js";
 import { updateSystemSettingsSchema } from "../validators/systemSettings.validator.js";
@@ -14,16 +14,17 @@ const router = express.Router();
 router.get("/", getSystemSettings);
 
 router.patch(
-  "/",
+  '/',
   authenticate,
-  authorizeRoles("ADMIN"),
+  authorizeRoles('ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
   upload.fields([
-    { name: "logo", maxCount: 1 },
-    { name: "favicon", maxCount: 1 },
-    { name: "loginBanner", maxCount: 1 },
+    { name: 'logo', maxCount: 1 },
+    { name: 'favicon', maxCount: 1 },
+    { name: 'loginBanner', maxCount: 1 },
   ]),
   validateBody(updateSystemSettingsSchema),
-  updateSystemSettings
+  updateSystemSettings,
 );
 
 export default router;

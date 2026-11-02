@@ -11,7 +11,7 @@ import {
   getQuestionsSchema,
   uploadQuestionsSchema,
 } from "../validators/question.validator.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, checkDemoUser } from '../middleware/auth.middleware.js';
 import upload from "../middleware/upload.middleware.js";
 
 const router = express.Router();
@@ -44,10 +44,11 @@ router.patch(
 
 // Delete a question
 router.delete(
-  "/:questionId",
+  '/:questionId',
   authenticate,
-  authorizeRoles("TEACHER", "ADMIN"),
-  questionController.deleteQuestion
+  authorizeRoles('TEACHER', 'ADMIN'),
+  checkDemoUser, // Middleware to check if the user is a demo user
+  questionController.deleteQuestion,
 );
 
 // Upload questions via CSV file
