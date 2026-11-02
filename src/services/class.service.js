@@ -90,6 +90,41 @@ export const deleteClass = async (classId) => {
   }
 };
 
+export const moveClassStudents = async (sourceClassId, destinationClassId) => {
+  const sourceId = Number(sourceClassId);
+  const destinationId = Number(destinationClassId);
+
+  if (sourceId === destinationId) {
+    throw new Error("Source and destination classes must be different");
+  }
+
+  return prisma.$transaction(async (transaction) => {
+    const classes = await transaction.class.findMany({
+      where: { id: { in: [sourceId, destinationId] } },
+      select: { id: true },
+    });
+
+    if (!classes.some(({ id }) => id === sourceId)) {
+      throw new Error("Source class not found");
+    }
+
+    if (!classes.some(({ id }) => id === destinationId)) {
+      throw new Error("Destination class not found");
+    }
+
+    const result = await transaction.user.updateMany({
+      where: { classId: sourceId, role: "STUDENT" },
+      data: { classId: destinationId },
+    });
+
+    return {
+      sourceClassId: sourceId,
+      destinationClassId: destinationId,
+      movedCount: result.count,
+    };
+  });
+};
+
 // export const getClassesForUser = async (user, options = {}) => {
 //   try {
 //     const page = options.page || 1;
