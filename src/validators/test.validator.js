@@ -106,6 +106,7 @@ export const getTestsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(1000).default(10),
   search: Joi.string().trim().optional(),
+  testId: Joi.number().integer().positive().optional(),
   status: Joi.string().valid("active", "inactive", "scheduled", "completed"),
   testState: Joi.string().valid("active", "inactive", "scheduled", "completed"),
   type: Joi.string().valid("TEST", "EXAM", "PRACTICE"),

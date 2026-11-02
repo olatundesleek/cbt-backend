@@ -235,6 +235,7 @@ export const getTestById = async (testId, user) => {
   }
 };
 
+
 export const updateTest = async (testId, data, user) => {
 
   try {
@@ -354,9 +355,10 @@ export const getTests = async (user, options = {}) => {
 
   const skip = (page - 1) * limit;
   const filters = {
+    ...(options.testId && { id: Number(options.testId) }),
     ...(options.status && { testState: options.status }),
     ...(options.type && { type: options.type }),
-    ...(options.courseId && { courseId: options.courseId }),
+    ...(options.courseId && { courseId: Number(options.courseId) }),
     ...(options.classId && {
       course: { classes: { some: { id: options.classId } } },
     }),

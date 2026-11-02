@@ -46,6 +46,7 @@ export async function getTests(req, res, next) {
       sort,
       order,
       search,
+      testId: req.query.testId,
       status: req.query.status ?? req.query.testState,
       type: req.query.type ?? req.query.testType,
       startDate: req.query.startDate,
