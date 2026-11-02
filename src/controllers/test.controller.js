@@ -46,6 +46,12 @@ export async function getTests(req, res, next) {
       sort,
       order,
       search,
+      status: req.query.status ?? req.query.testState,
+      type: req.query.type ?? req.query.testType,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
+      courseId: req.query.courseId,
+      classId: req.query.classId,
     });
     return success(res, "Tests fetched successfully", tests);
   } catch (err) {

@@ -17,6 +17,8 @@ export async function getStudents(req, res, next) {
       search,
       classId: req.query.classId,
       courseId: req.query.courseId,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
     });
     return success(res, "Students fetched successfully", users);
   } catch (err) {

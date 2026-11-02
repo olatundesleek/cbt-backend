@@ -13,6 +13,16 @@ export const getStudents = async (user, options = {}) => {
     ...(options.courseId && {
       class: { courses: { some: { id: options.courseId } } },
     }),
+    ...((options.startDate || options.endDate) && {
+      createdAt: {
+        ...(options.startDate && { gte: new Date(options.startDate) }),
+        ...(options.endDate && {
+          lte: new Date(
+            new Date(options.endDate).setUTCHours(23, 59, 59, 999)
+          ),
+        }),
+      },
+    }),
   };
   const searchFilter = search
     ? {

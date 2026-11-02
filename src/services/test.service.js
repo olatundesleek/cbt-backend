@@ -353,6 +353,24 @@ export const getTests = async (user, options = {}) => {
   const search = options.search?.trim();
 
   const skip = (page - 1) * limit;
+  const filters = {
+    ...(options.status && { testState: options.status }),
+    ...(options.type && { type: options.type }),
+    ...(options.courseId && { courseId: options.courseId }),
+    ...(options.classId && {
+      course: { classes: { some: { id: options.classId } } },
+    }),
+    ...((options.startDate || options.endDate) && {
+      startTime: {
+        ...(options.startDate && { gte: new Date(options.startDate) }),
+        ...(options.endDate && {
+          lte: new Date(
+            new Date(options.endDate).setUTCHours(23, 59, 59, 999)
+          ),
+        }),
+      },
+    }),
+  };
   const searchFilter = search
     ? {
         OR: [
@@ -364,8 +382,9 @@ export const getTests = async (user, options = {}) => {
 
   switch (user.role) {
     case "ADMIN": {
+      const where = { ...filters, ...searchFilter };
       const allTest = await prisma.test.findMany({
-        where: searchFilter,
+        where,
         include: {
           teacher: {
             select: {
@@ -404,7 +423,7 @@ export const getTests = async (user, options = {}) => {
         },
       });
 
-      const total = await prisma.test.count({ where: searchFilter });
+      const total = await prisma.test.count({ where });
 
       const data = allTest.map((test) => {
         const { teacher, ...safeTest } = test;
@@ -427,7 +446,7 @@ export const getTests = async (user, options = {}) => {
     }
 
     case "TEACHER": {
-      const where = { createdBy: user.id, ...searchFilter };
+      const where = { createdBy: user.id, ...filters, ...searchFilter };
       const tests = await prisma.test.findMany({
         where,
         include: {
@@ -491,21 +510,28 @@ export const getTests = async (user, options = {}) => {
         throw error;
       }
 
-      // Fetch all tests for the student's class where end date has not passed
-      const tests = await prisma.test.findMany({
-        where: {
-          course: {
-            classes: {
-              some: {
-                id: user.classId,
+      const where = {
+        AND: [
+          {
+            course: {
+              classes: {
+                some: {
+                  id: user.classId,
+                },
               },
             },
+            endTime: {
+              gt: new Date(),
+            },
           },
-          endTime: {
-            gt: new Date(), // Only tests where endTime is in the future
-          },
-          ...searchFilter,
-        },
+          filters,
+          searchFilter,
+        ],
+      };
+
+      // Fetch all tests for the student's class where end date has not passed
+      const tests = await prisma.test.findMany({
+        where,
         include: {
           teacher: {
             select: {
@@ -547,19 +573,7 @@ export const getTests = async (user, options = {}) => {
       });
 
       const total = await prisma.test.count({
-        where: {
-          course: {
-            classes: {
-              some: {
-                id: user.classId,
-              },
-            },
-          },
-          endTime: {
-            gt: new Date(), // Only count tests where endTime is in the future
-          },
-          ...searchFilter,
-        },
+        where,
       });
 
       // Map session info into each test if there is an in-progress session
