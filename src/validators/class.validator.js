@@ -19,6 +19,14 @@ export const deleteClassSchema = Joi.object({
   classId: Joi.number().required(),
 });
 
+export const moveClassStudentsParamsSchema = Joi.object({
+  sourceClassId: Joi.number().integer().positive().required(),
+});
+
+export const moveClassStudentsSchema = Joi.object({
+  destinationClassId: Joi.number().integer().positive().required(),
+});
+
 export const assignStudentSchema = Joi.object({
   studentId: Joi.number().integer().positive().required(),
 });

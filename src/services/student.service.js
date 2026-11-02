@@ -8,6 +8,12 @@ export const getStudents = async (user, options = {}) => {
   const search = options.search?.trim();
 
   const skip = (page - 1) * limit;
+  const filters = {
+    ...(options.classId && { classId: options.classId }),
+    ...(options.courseId && {
+      class: { courses: { some: { id: options.courseId } } },
+    }),
+  };
   const searchFilter = search
     ? {
         OR: [
@@ -20,8 +26,9 @@ export const getStudents = async (user, options = {}) => {
 
   if (user.role === "ADMIN") {
     // Return all students with their class and courses
+    const where = { role: "STUDENT", ...filters, ...searchFilter };
     const students = await prisma.user.findMany({
-      where: { role: "STUDENT", ...searchFilter },
+      where,
       select: {
         id: true,
         firstname: true,
@@ -44,7 +51,7 @@ export const getStudents = async (user, options = {}) => {
     });
 
     const total = await prisma.user.count({
-      where: { role: "STUDENT", ...searchFilter },
+      where,
     });
 
     return {
@@ -72,6 +79,7 @@ export const getStudents = async (user, options = {}) => {
     // 2. Taking at least one course taught by this teacher
     const where = {
         role: "STUDENT",
+        ...filters,
         OR: [
           {
             class: { teacherId: user.id }, // In teacher's class

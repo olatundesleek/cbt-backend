@@ -5,6 +5,8 @@ import {
   updateClassSchema,
   deleteClassSchema,
   getClassesSchema,
+  moveClassStudentsParamsSchema,
+  moveClassStudentsSchema,
 } from "../validators/class.validator.js";
 import { validateBody } from "../middleware/validate.middleware.js";
 import { validateParams } from "../middleware/validate.middleware.js";
@@ -34,6 +36,15 @@ router.get(
   authenticate,
   validateQuery(getClassesSchema),
   classController.getClass
+);
+
+router.post(
+  "/:sourceClassId/move-students",
+  validateParams(moveClassStudentsParamsSchema),
+  validateBody(moveClassStudentsSchema),
+  authenticate,
+  authorizeRoles("ADMIN"),
+  classController.moveClassStudents
 );
 
 router.delete(
