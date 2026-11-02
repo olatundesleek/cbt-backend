@@ -1,23 +1,24 @@
-﻿# CBT Backend
+# CBT Backend
 
-A Node.js/Express backend for a computer-based testing (CBT) platform. It is built for schools, colleges, and assessment administrators who need to manage courses, classes, question banks, tests, student sessions, grading, and reporting from a single API.
+A production-ready Node.js backend for a computer-based testing (CBT) platform. It powers exam workflows for schools and institutions by handling authentication, user management, course and class administration, question banks, assessments, result processing, notifications, and media uploads.
 
-This project provides the server-side foundation for a CBT system with role-based access control, secure authentication, file uploads, real-time session updates, and PostgreSQL-backed persistence using Prisma.
+This repository is designed to serve a CBT front-end application and exposes a structured REST API backed by PostgreSQL and Prisma.
 
 ## Features
 
-- JWT-based authentication with cookie support
+- JWT-based authentication with cookie-session support
 - Role-based access control for admin, teacher, and student users
-- User management and profile handling
+- User profile management and account workflows
 - Course and class administration
-- Question bank and exam question management
-- Test creation, scheduling, and lifecycle management
-- Real-time CBT session tracking via Socket.IO
-- Result processing, analytics, and dashboard summaries
-- CSV/Excel-based question import support
-- File upload support for profile images and question bank assets
-- Backup and restore tooling for PostgreSQL
-- Notification and system settings APIs
+- Question bank and question management
+- Test creation, exam lifecycle handling, and session tracking
+- Student participation and CBT session flow
+- Result generation and dashboard summaries
+- File upload support for profile pictures and assessment-related assets
+- PostgreSQL backup and restore tooling
+- Notification and system settings endpoints
+- Socket.IO real-time communication for exam/test activity
+- CSV and Excel processing for imports and exports
 
 ## Tech Stack
 
@@ -26,54 +27,58 @@ This project provides the server-side foundation for a CBT system with role-base
 - PostgreSQL
 - Prisma ORM
 - Socket.IO
-- JWT / cookie-based auth
+- JWT + cookie-parser
 - Joi validation
 - Multer for uploads
 - Cloudinary for media hosting
-- ExcelJS and CSV parsers
+- ExcelJS and CSV parsing
+- Nodemon for local development
 
 ## Project Structure
 
 ```text
 cbt-backend/
-├── src/
-│   ├── app.js
-│   ├── config/
-│   ├── controllers/
-│   ├── middleware/
-│   ├── routes/
-│   ├── services/
-│   ├── utils/
-│   ├── validations/
-│   └── validators/
-├── prisma/
-│   ├── schema.prisma
-│   ├── seed.js
-│   └── migrations/
-├── uploads/
-├── backups/
-├── docs/
-├── server.js
-├── render.yaml
-├── package.json
-├── README.md
-├── .env.example
-└── .gitignore
++-- src/
+�   +-- app.js
+�   +-- config/
+�   +-- controllers/
+�   +-- middleware/
+�   +-- routes/
+�   +-- services/
+�   +-- utils/
+�   +-- validations/
+�   +-- validators/
++-- prisma/
+�   +-- schema.prisma
+�   +-- seed.js
+�   +-- migrations/
++-- uploads/
++-- backups/
++-- docs/
++-- server.js
++-- render.yaml
++-- package.json
++-- README.md
++-- .env.example
++-- .env.development
++-- .env
++-- .gitignore
 ```
 
-## Requirements
+## Prerequisites
 
-- Node.js 18+ (recommended LTS)
-- PostgreSQL 14+
+- Node.js 18 or later
+- PostgreSQL 14 or later
 - npm
-- A configured database and JWT secret
+- A configured database instance
+- A valid JWT secret and optional Cloudinary credentials
 
 ## Quick Start
 
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/cbt-backend.git
+git clone https://github.com/olatundesleek/cbt-backend.git
 cd cbt-backend
 ```
 
@@ -83,15 +88,19 @@ cd cbt-backend
 npm install
 ```
 
-3. Create an environment file
+3. Create your environment file
 
-This project loads environment variables from a file named like `.env.development` when `NODE_ENV` is not `production`.
+This project reads environment variables from `.env.development` in local development and `.env.production` in production.
 
 ```bash
 copy .env.example .env.development
 ```
 
-If you are running in production mode, create a `.env.production` file instead or export the values directly in your environment.
+On Linux/macOS:
+
+```bash
+cp .env.example .env.development
+```
 
 4. Configure environment variables
 
@@ -105,8 +114,8 @@ JWT_SECRET="replace-this-with-a-long-random-secret"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
-PG_DUMP_PATH="C:\\Program Files\\PostgreSQL\\16\\bin\\pg_dump.exe"
-PG_RESTORE_PATH="C:\\Program Files\\PostgreSQL\\16\\bin\\pg_restore.exe"
+PG_DUMP_PATH="C:\Program Files\PostgreSQL\16\bin\pg_dump.exe"
+PG_RESTORE_PATH="C:\Program Files\PostgreSQL\16\bin\pg_restore.exe"
 ```
 
 5. Generate Prisma client
@@ -121,33 +130,35 @@ npx prisma generate
 npx prisma migrate dev
 ```
 
-7. Start the backend
+7. Start the app
+
+Development mode:
 
 ```bash
 npm run dev
 ```
 
-For production:
+Production mode:
 
 ```bash
 npm start
 ```
 
-The app runs on port `4000` by default unless you override it with `PORT`.
+The app listens on port `4000` by default unless `PORT` is overridden.
 
 ## Environment Variables
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `NODE_ENV` | No | Sets the environment mode (`development`, `production`, etc.) |
+| `NODE_ENV` | No | Runtime mode such as `development` or `production` |
 | `PORT` | No | HTTP server port; defaults to `4000` |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `JWT_SECRET` | Yes | Secret used for signing JWT tokens |
+| `JWT_SECRET` | Yes | Secret used to sign and verify JWTs |
 | `CLOUDINARY_CLOUD_NAME` | No | Cloudinary cloud name |
 | `CLOUDINARY_API_KEY` | No | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | No | Cloudinary API secret |
-| `PG_DUMP_PATH` | No | Optional path to PostgreSQL `pg_dump` for backup creation |
-| `PG_RESTORE_PATH` | No | Optional path to PostgreSQL `pg_restore` for restore operations |
+| `PG_DUMP_PATH` | No | Optional path to PostgreSQL `pg_dump` |
+| `PG_RESTORE_PATH` | No | Optional path to PostgreSQL `pg_restore` |
 
 ## Database Setup
 
@@ -162,7 +173,7 @@ npx prisma generate
 npx prisma studio
 ```
 
-If the schema changes, create a migration before restarting the app:
+To create a new migration when the schema changes:
 
 ```bash
 npx prisma migrate dev --name <migration-name>
@@ -170,7 +181,7 @@ npx prisma migrate dev --name <migration-name>
 
 ## API Overview
 
-The backend exposes a grouped API under `/api`.
+The backend exposes its REST API under `/api` with routes such as:
 
 ```text
 /api/auth
@@ -190,7 +201,7 @@ The backend exposes a grouped API under `/api`.
 /api/backup-restore
 ```
 
-The main app also serves uploads from:
+Static files are served from:
 
 ```text
 /uploads
@@ -198,54 +209,52 @@ The main app also serves uploads from:
 
 ## Authentication and Authorization
 
-Authentication is handled through JWT tokens and cookie-based session tracking. The server uses `reqtoken` and browser session cookies for login enforcement and concurrent session protection. Access control is enforced by role middleware for protected routes.
+Authentication is handled with JWT tokens and cookie-based session tracking. Protected routes are guarded by role-aware middleware so access is restricted according to the user's role.
 
-Supported roles typically include:
+Typical roles supported by the platform include:
 
 - `ADMIN`
 - `TEACHER`
 - `STUDENT`
 
-## Real-Time Functionality
+## Real-Time Features
 
-The server initializes a Socket.IO instance and exposes session-based communication for test activities and updates. Clients can join a session room and receive server events related to real-time CBT interactions.
+The server boots a Socket.IO instance and enables session-based communication for exam-related updates. Clients can subscribe to session rooms and receive live events for test activity and related state changes.
 
 ## Backup and Restore
 
-The project supports PostgreSQL backup/restore operations through `pg_dump` and `pg_restore`.
+The project supports PostgreSQL dumps and restores through `pg_dump` and `pg_restore` for database backup and recovery flows.
 
-The backup flow is designed to work with the `backups/` folder and a valid `DATABASE_URL`.
-
-Typical setup:
+Typical verification commands:
 
 ```bash
-# verify Postgres tools are in PATH
 pg_dump --version
 pg_restore --version
 ```
 
-If they are not available, point to the binaries using `PG_DUMP_PATH` and `PG_RESTORE_PATH`.
+If those binaries are not available on your system PATH, set `PG_DUMP_PATH` and `PG_RESTORE_PATH` in your environment.
 
 ## Deployment
 
-A basic Render deployment file is included in `render.yaml`.
+A basic Render configuration is included in `render.yaml`.
 
 ```yaml
 services:
   - type: web
-    name: your-service
+    name: cbt-backend
     env: node
     buildCommand: "npm ci"
     startCommand: "node server.js"
 ```
 
-For deployment, ensure that all required environment variables are set in your hosting environment and that PostgreSQL connectivity is configured correctly.
+Make sure required environment variables are configured in the deployment environment and that your PostgreSQL database is reachable.
 
 ## Notes
 
-- The server also serves uploaded files from the `uploads/` directory.
-- CORS is enabled for local development and a small set of known production origins.
-- The application uses `express.json()` and `cookie-parser` by default for API body parsing and cookies.
+- Uploaded media is served from the `uploads/` directory.
+- CORS is configured for local development and a small set of trusted production origins.
+- The application uses `express.json()` and `cookie-parser` to handle JSON request bodies and cookies.
+- The API is built to work alongside a front-end client such as a React or Next.js application.
 
 ## License
 
