@@ -15,6 +15,8 @@ export async function getStudents(req, res, next) {
       sort,
       order,
       search,
+      classId: req.query.classId,
+      courseId: req.query.courseId,
     });
     return success(res, "Students fetched successfully", users);
   } catch (err) {

@@ -53,6 +53,18 @@ export async function updateClass(req, res, next) {
   }
 }
 
+export async function moveClassStudents(req, res, next) {
+  try {
+    const result = await classService.moveClassStudents(
+      req.params.sourceClassId,
+      req.body.destinationClassId
+    );
+    return success(res, "Students moved to destination class", result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function deleteClass(req, res) {
   try {
     await classService.deleteClass(req.params.classId);

@@ -2,7 +2,10 @@ import Joi from "joi";
 export const registerSchema = Joi.object({
   firstname: Joi.string().min(2).max(100).required(),
   lastname: Joi.string().min(2).max(100).required(),
-  username: Joi.string().required(),
+  username: Joi.string()
+    .pattern(/^\S+$/)
+    .required()
+    .messages({ "string.pattern.base": "Username must not contain spaces" }),
   password: Joi.string().min(6).required(),
   role: Joi.string().valid("ADMIN", "TEACHER", "STUDENT").required(),
 

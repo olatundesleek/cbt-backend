@@ -1,10 +1,11 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { invalidateSystemSettingsCache } from "./systemSettings.service.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const unlinkAsync = promisify(fs.unlink);
 const readdirAsync = promisify(fs.readdir);
 const statAsync = promisify(fs.stat);
@@ -86,11 +87,11 @@ const parseDatabaseUrl = () => {
 
   const urlObj = new URL(databaseUrl);
   return {
-    user: urlObj.username,
-    password: urlObj.password,
+    user: decodeURIComponent(urlObj.username),
+    password: decodeURIComponent(urlObj.password),
     host: urlObj.hostname,
     port: urlObj.port || "5432",
-    database: urlObj.pathname.slice(1),
+    database: decodeURIComponent(urlObj.pathname.slice(1)),
   };
 };
 
@@ -107,14 +108,19 @@ export const createBackup = async () => {
     const credentials = parseDatabaseUrl();
     const pgDumpPath = getPgDumpPath();
 
-    // Create backup using pg_dump with environment variables passed through Node.js
-    // This works cross-platform (Windows, Linux, macOS)
-    const command = `"${pgDumpPath}" -U ${credentials.user} -h ${credentials.host} -p ${credentials.port} -d ${credentials.database} -F c -b -v -f "${backupPath}"`;
-
     const env = { ...process.env, PGPASSWORD: credentials.password };
-    const { stderr } = await execAsync(command, { 
+    const { stderr } = await execFileAsync(pgDumpPath, [
+      "-U", credentials.user,
+      "-h", credentials.host,
+      "-p", credentials.port,
+      "-d", credentials.database,
+      "-F", "c",
+      "-b",
+      "-v",
+      "-f", backupPath,
+    ], {
       maxBuffer: 10 * 1024 * 1024,
-      env 
+      env,
     });
 
     if (stderr && !stderr.includes("pg_dump")) {
@@ -196,16 +202,22 @@ export const restoreFromUploadedFile = async (filePath) => {
     const credentials = parseDatabaseUrl();
     const pgRestorePath = getPgRestorePath();
 
-    // Restore using pg_restore with environment variables passed through Node.js
-    const command = `"${pgRestorePath}" -U ${credentials.user} -h ${credentials.host} -p ${credentials.port} -d ${credentials.database} -c -v "${filePath}"`;
-
     const env = { ...process.env, PGPASSWORD: credentials.password };
-    const { stderr } = await execAsync(command, { 
+    const { stderr } = await execFileAsync(pgRestorePath, [
+      "-U", credentials.user,
+      "-h", credentials.host,
+      "-p", credentials.port,
+      "-d", credentials.database,
+      "-c",
+      "-v",
+      filePath,
+    ], {
       maxBuffer: 10 * 1024 * 1024,
-      env 
+      env,
     });
 
     console.log("Restore process output:", stderr);
+    await invalidateSystemSettingsCache();
 
     // Clean up uploaded file after restore
     try {
@@ -246,16 +258,22 @@ export const restoreFromBackupFile = async (filename) => {
     const credentials = parseDatabaseUrl();
     const pgRestorePath = getPgRestorePath();
 
-    // Restore using pg_restore with environment variables passed through Node.js
-    const command = `"${pgRestorePath}" -U ${credentials.user} -h ${credentials.host} -p ${credentials.port} -d ${credentials.database} -c -v "${backupPath}"`;
-
     const env = { ...process.env, PGPASSWORD: credentials.password };
-    const { stderr } = await execAsync(command, { 
+    const { stderr } = await execFileAsync(pgRestorePath, [
+      "-U", credentials.user,
+      "-h", credentials.host,
+      "-p", credentials.port,
+      "-d", credentials.database,
+      "-c",
+      "-v",
+      backupPath,
+    ], {
       maxBuffer: 10 * 1024 * 1024,
-      env 
+      env,
     });
 
     console.log("Restore process output:", stderr);
+    await invalidateSystemSettingsCache();
 
     return { filename };
   } catch (error) {
