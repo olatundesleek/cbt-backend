@@ -18,6 +18,14 @@ export const getStudentsListSchema = Joi.object({
   search: Joi.string().trim().optional(),
   classId: Joi.number().integer().positive().optional(),
   courseId: Joi.number().integer().positive().optional(),
+  startDate: Joi.date().iso().optional(),
+  endDate: Joi.date()
+    .iso()
+    .when("startDate", {
+      is: Joi.exist(),
+      then: Joi.date().min(Joi.ref("startDate")),
+    })
+    .optional(),
   sort: Joi.string()
     .valid("firstname", "lastname", "createdAt")
     .default("createdAt"),

@@ -106,6 +106,22 @@ export const getTestsSchema = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(1000).default(10),
   search: Joi.string().trim().optional(),
+  status: Joi.string().valid("active", "inactive", "scheduled", "completed"),
+  testState: Joi.string().valid("active", "inactive", "scheduled", "completed"),
+  type: Joi.string().valid("TEST", "EXAM", "PRACTICE"),
+  testType: Joi.string().valid("TEST", "EXAM", "PRACTICE"),
+  startDate: Joi.date().iso().optional(),
+  endDate: Joi.date()
+    .iso()
+    .when("startDate", {
+      is: Joi.exist(),
+      then: Joi.date().min(Joi.ref("startDate")),
+    })
+    .optional(),
+  courseId: Joi.number().integer().positive().optional(),
+  classId: Joi.number().integer().positive().optional(),
   sort: Joi.string().valid("title", "createdAt", "type").default("createdAt"),
   order: Joi.string().valid("asc", "desc").default("desc"),
-});
+})
+  .oxor("status", "testState")
+  .oxor("type", "testType");
