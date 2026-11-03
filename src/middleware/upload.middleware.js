@@ -21,11 +21,32 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const excelFileFilter = (req, file, cb) => {
+  if (path.extname(file.originalname).toLowerCase() === ".xlsx") {
+    cb(null, true);
+  } else {
+    cb(
+      Object.assign(new Error("Only .xlsx Excel files are allowed"), {
+        status: 400,
+      }),
+      false
+    );
+  }
+};
+
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 1024 * 1024 * 5, // Limit file size to 5MB
+  },
+});
+
+export const excelUpload = multer({
+  storage,
+  fileFilter: excelFileFilter,
+  limits: {
+    fileSize: 1024 * 1024 * 5,
   },
 });
 

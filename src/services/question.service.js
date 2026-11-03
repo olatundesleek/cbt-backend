@@ -208,9 +208,9 @@ export const deleteQuestion = async (questionId, user) => {
   }
 };
 
-import { parseQuestionsCsv } from "../utils/csv.js";
+import { parseQuestionsExcel } from "../utils/excel.js";
 
-export const uploadQuestionsFromCsv = async (filePath, bankId, user) => {
+export const uploadQuestionsFromExcel = async (filePath, bankId, user) => {
   try {
     // Verify question bank exists and user owns it
     const bank = await prisma.questionBank.findUnique({
@@ -222,8 +222,8 @@ export const uploadQuestionsFromCsv = async (filePath, bankId, user) => {
       throw new Error("Cannot add questions to this bank");
     }
 
-    // Parse CSV file
-    const questions = await parseQuestionsCsv(filePath);
+    // Parse and validate the Excel workbook before creating any questions.
+    const questions = await parseQuestionsExcel(filePath);
 
     // Validate all questions point to the same bank
     // if (questions.some((q) => parseInt(q.bankId) !== parseInt(bankId))) {

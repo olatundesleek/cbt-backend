@@ -41,6 +41,9 @@ yarn-error.log*
 # Testing
 /coverage
 
+/bruno/
+
+
 # Misc
 .cache/
 temp/
