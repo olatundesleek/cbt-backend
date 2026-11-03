@@ -9,10 +9,9 @@ import {
   createQuestionSchema,
   updateQuestionSchema,
   getQuestionsSchema,
-  uploadQuestionsSchema,
 } from "../validators/question.validator.js";
 import { authenticate } from "../middleware/auth.middleware.js";
-import upload from "../middleware/upload.middleware.js";
+import { excelUpload } from "../middleware/upload.middleware.js";
 
 const router = express.Router();
 
@@ -50,17 +49,16 @@ router.delete(
   questionController.deleteQuestion
 );
 
-// Upload questions via CSV file
+// Upload questions via Excel workbook
 router.post(
   "/upload",
   authenticate,
   authorizeRoles("TEACHER", "ADMIN"),
-  upload.single("questions"), // 'questions' is the field name
-  validateBody(uploadQuestionsSchema),
+  excelUpload.single("questions"), // 'questions' is the field name
   questionController.uploadQuestions
 );
 
-// Get CSV template for question upload
+// Download Excel template for question upload
 router.get(
   "/upload/template",
   authenticate,

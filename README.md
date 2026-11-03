@@ -1428,7 +1428,7 @@ DELETE /api/questions/:questionId
 
 ---
 
-## Upload Questions via CSV
+## Upload Questions via Excel
 
 ```http
 POST /api/questions/upload
@@ -1437,8 +1437,13 @@ POST /api/questions/upload
 **Form Data**
 | Field | Type | Description |
 |-------|--------|-------------|
-| questions | file (CSV) | CSV file containing questions |
+| questions | file (.xlsx) | Excel workbook containing questions |
 | bankId | number | ID of the question bank |
+
+The first worksheet must have columns in this order: `Question`, `Option A`,
+`Option B`, `Option C`, `Option D`, `Answer`, `Marks`. Each question row must
+provide all seven values. `Answer` must be `A`, `B`, `C`, or `D`; it is saved
+as the matching option text. Marks must be positive safe values.
 
 **Response**
 
@@ -1460,7 +1465,7 @@ POST /api/questions/upload
 
 ---
 
-## Download CSV Upload Template
+## Download Excel Upload Template
 
 ```http
 GET /api/questions/upload/template
@@ -1468,11 +1473,10 @@ GET /api/questions/upload/template
 
 **Response**
 
-- Downloads a CSV with headers:
-
-```
-text,options,answer,marks
-```
+- Downloads `question_template.xlsx` with columns in this order: `Question`,
+  `Option A`, `Option B`, `Option C`, `Option D`, `Answer`, `Marks`.
+- Includes a sample HTML question. Choose `A`, `B`, `C`, or `D` in the Answer
+  column to identify the correct option.
 
 ### Test Sessions
 
