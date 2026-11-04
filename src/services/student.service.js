@@ -92,19 +92,16 @@ export const getStudents = async (user, options = {}) => {
         ...filters,
         OR: [
           {
-            class: { teacherId: user.id }, // In teacher's class
+            class: { is: { teacherId: user.id } },
           },
           {
-            // class: {
-            //   courses: {
-            //     some: {
-            //       id: { in: teacherCourseIds }, // Taking teacher's course
-            //     },
-            //   },
-            // },
-             class: {
-          include: { courses: true },
-        },
+            class: {
+              is: {
+                courses: {
+                  some: { id: { in: teacherCourseIds } },
+                },
+              },
+            },
           },
         ],
         ...searchFilter,
@@ -120,13 +117,7 @@ export const getStudents = async (user, options = {}) => {
         profilePicture: true,
         isActive: true,
         class: {
-          include: {
-            courses: {
-              where: {
-                teacherId: user.id,
-              },
-            },
-          },
+          include: { courses: true },
         },
       },
       skip,
