@@ -95,13 +95,16 @@ export const getStudents = async (user, options = {}) => {
             class: { teacherId: user.id }, // In teacher's class
           },
           {
-            class: {
-              courses: {
-                some: {
-                  id: { in: teacherCourseIds }, // Taking teacher's course
-                },
-              },
-            },
+            // class: {
+            //   courses: {
+            //     some: {
+            //       id: { in: teacherCourseIds }, // Taking teacher's course
+            //     },
+            //   },
+            // },
+             class: {
+          include: { courses: true },
+        },
           },
         ],
         ...searchFilter,

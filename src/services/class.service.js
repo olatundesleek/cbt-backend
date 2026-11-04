@@ -323,7 +323,17 @@ export const getClassesForUser = async (user, options = {}) => {
     }
 
     if (role === "TEACHER") {
-      const where = { teacherId: user.id, ...searchFilter };
+      const where = {
+        AND: [
+          {
+            OR: [
+              { teacherId: user.id },
+              { courses: { some: { teacherId: user.id } } },
+            ],
+          },
+          searchFilter,
+        ],
+      };
       const classes = await prisma.class.findMany({
         where,
         include: {
