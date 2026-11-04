@@ -101,14 +101,16 @@ export const moveClassStudents = async (sourceClassId, destinationClassId) => {
   return prisma.$transaction(async (transaction) => {
     const classes = await transaction.class.findMany({
       where: { id: { in: [sourceId, destinationId] } },
-      select: { id: true },
+      select: { id: true, className: true },
     });
 
-    if (!classes.some(({ id }) => id === sourceId)) {
+    const sourceClass = classes.find(({ id }) => id === sourceId);
+    if (!sourceClass) {
       throw new Error("Source class not found");
     }
 
-    if (!classes.some(({ id }) => id === destinationId)) {
+    const destinationClass = classes.find(({ id }) => id === destinationId);
+    if (!destinationClass) {
       throw new Error("Destination class not found");
     }
 
@@ -119,7 +121,9 @@ export const moveClassStudents = async (sourceClassId, destinationClassId) => {
 
     return {
       sourceClassId: sourceId,
+      sourceClassName: sourceClass.className,
       destinationClassId: destinationId,
+      destinationClassName: destinationClass.className,
       movedCount: result.count,
     };
   });
