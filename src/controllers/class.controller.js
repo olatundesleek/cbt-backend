@@ -59,7 +59,7 @@ export async function moveClassStudents(req, res, next) {
       req.params.sourceClassId,
       req.body.destinationClassId
     );
-    return success(res, `Students moved to ${result.destinationClassName}`, result);
+    return success(res, `${result.count > 1 ? 'students' : 'student'} moved to ${result.destinationClassName}`, result);
   } catch (err) {
     next(err);
   }
